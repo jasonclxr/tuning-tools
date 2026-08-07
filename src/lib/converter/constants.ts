@@ -1,0 +1,3 @@
+export const STOICH_AFR_GAS = 14.7
+export const KPA_TO_PSI = 0.1450377377
+export const GRAMS_PER_SECOND_TO_LB_PER_MIN = 0.13227735731

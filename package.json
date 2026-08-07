@@ -1,0 +1,38 @@
+{
+  "name": "versa-log-viewer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "homepage": "https://jasonclxr.github.io/versa-tools",
+  "description": "Local-first VersaTuner datalog viewer and HPTuners converter",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jasonclxr/versa-tools.git"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "build:pages": "GITHUB_PAGES=true tsc -b && GITHUB_PAGES=true vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "predeploy": "npm run build:pages",
+    "deploy": "gh-pages -d dist"
+  },
+  "dependencies": {
+    "papaparse": "^5.5.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "uplot": "^1.6.32"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/papaparse": "^5.5.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "gh-pages": "^6.3.0",
+    "oxlint": "^1.75.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0"
+  }
+}
