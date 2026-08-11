@@ -1,6 +1,27 @@
 import { findChannelByRole } from './channels'
 import { indexNearTime } from './downsample'
-import type { ParsedLog, TimeRange } from './types'
+import type { ParsedChannel, ParsedLog, TimeRange } from './types'
+
+/** Wideband readings at/above this AFR are treated as decel fuel cut and excluded from mixture maps. */
+const DECEL_FUEL_CUT_AFR = 27
+/** Gasoline stoich used only to express the fuel-cut threshold in λ when the Z channel is lambda. */
+const FUEL_CUT_STOICH_AFR = 14.7
+const DECEL_FUEL_CUT_LAMBDA = DECEL_FUEL_CUT_AFR / FUEL_CUT_STOICH_AFR
+
+/** True when this sample is a lean peg from decel fuel cut (not useful for mixture mapping). */
+function isDecelFuelCutSample(zCh: ParsedChannel, zv: number): boolean {
+  const isMixture =
+    zCh.role === 'afrGas' ||
+    zCh.role === 'actualLambda' ||
+    zCh.id === '__derived_lambda'
+  if (!isMixture) return false
+  const unit = (zCh.unit ?? '').toLowerCase()
+  if (unit === 'λ' || unit === 'lambda' || unit.includes('λ')) {
+    return zv >= DECEL_FUEL_CUT_LAMBDA
+  }
+  // AFR (native or converted from λ)
+  return zv >= DECEL_FUEL_CUT_AFR
+}
 
 export type MapAgg = 'avg' | 'max' | 'min' | 'count'
 
@@ -141,6 +162,7 @@ export function buildMapTable(log: ParsedLog, options: MapTableOptions): MapTabl
     const yv = yCh.data[i]
     const zv = zCh.data[i]
     if (!Number.isFinite(xv) || !Number.isFinite(yv) || !Number.isFinite(zv)) continue
+    if (isDecelFuelCutSample(zCh, zv)) continue
     const xi = siteIndex(xv, options.xEdges)
     const yi = siteIndex(yv, options.yEdges)
     if (xi < 0 || yi < 0) continue
