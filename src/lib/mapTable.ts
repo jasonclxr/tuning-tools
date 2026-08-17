@@ -97,6 +97,8 @@ export function suggestAxisChannels(log: ParsedLog): {
   const knock =
     log.channels.find((c) => c.id === '__derived_knock_activity')?.id ??
     findChannelByRole(log.channels, 'knockRetard')
+  const wheelHp = log.channels.find((c) => c.id === '__derived_wheel_hp')?.id
+  const crankHp = log.channels.find((c) => c.id === '__derived_crank_hp')?.id
   const afrErr = log.channels.find((c) => c.id === '__derived_afr_error')?.id
   const lambdaErr = log.channels.find((c) => c.id === '__derived_lambda_error')?.id
   const afr = findChannelByRole(log.channels, 'afrGas')
@@ -105,7 +107,16 @@ export function suggestAxisChannels(log: ParsedLog): {
   return {
     xId: rpm ?? log.channels[0]?.id ?? '',
     yId: load ?? boost ?? map ?? log.channels[1]?.id ?? '',
-    zId: knock ?? afrErr ?? lambdaErr ?? afr ?? lambda ?? log.channels[2]?.id ?? '',
+    zId:
+      crankHp ??
+      wheelHp ??
+      knock ??
+      afrErr ??
+      lambdaErr ??
+      afr ??
+      lambda ??
+      log.channels[2]?.id ??
+      '',
   }
 }
 

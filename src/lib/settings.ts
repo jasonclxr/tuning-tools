@@ -22,6 +22,12 @@ export interface AppSettings {
   fuelVolumeUnit: FuelVolumeUnit
   /** Stoich AFR used for λ ↔ AFR conversions (gasoline default 14.7). */
   stoichAfr: number
+  /** Curb/test weight used for VSS-based wheel HP estimate (always stored as lb). */
+  vehicleWeightLb: number
+  /** Drivetrain loss percent for crank HP estimate from wheel HP (0–50). */
+  drivetrainLossPercent: number
+  /** When true, estimate wheel/crank HP from vehicle speed + weight. */
+  estimatePowerFromSpeed: boolean
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -36,6 +42,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   massUnit: 'g',
   fuelVolumeUnit: 'cc',
   stoichAfr: 14.7,
+  vehicleWeightLb: 3200,
+  drivetrainLossPercent: 15,
+  estimatePowerFromSpeed: true,
 }
 
 const STORAGE_KEY = 'versa-log-viewer:settings'
@@ -52,6 +61,21 @@ export function loadSettings(): AppSettings {
         typeof parsed.stoichAfr === 'number' && Number.isFinite(parsed.stoichAfr) && parsed.stoichAfr > 0
           ? parsed.stoichAfr
           : DEFAULT_SETTINGS.stoichAfr,
+      vehicleWeightLb:
+        typeof parsed.vehicleWeightLb === 'number' &&
+        Number.isFinite(parsed.vehicleWeightLb) &&
+        parsed.vehicleWeightLb > 0
+          ? parsed.vehicleWeightLb
+          : DEFAULT_SETTINGS.vehicleWeightLb,
+      drivetrainLossPercent:
+        typeof parsed.drivetrainLossPercent === 'number' &&
+        Number.isFinite(parsed.drivetrainLossPercent)
+          ? Math.min(50, Math.max(0, parsed.drivetrainLossPercent))
+          : DEFAULT_SETTINGS.drivetrainLossPercent,
+      estimatePowerFromSpeed:
+        typeof parsed.estimatePowerFromSpeed === 'boolean'
+          ? parsed.estimatePowerFromSpeed
+          : DEFAULT_SETTINGS.estimatePowerFromSpeed,
     }
   } catch {
     return { ...DEFAULT_SETTINGS }

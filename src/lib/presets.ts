@@ -55,6 +55,14 @@ export function buildBuiltinPresets(log: ParsedLog): LayoutPreset[] {
   const stft = pick(log, ['shortTermFuelTrim'])
   const ltft = pick(log, ['longTermFuelTrim'])
   const fuelPrimary = afr ?? lambda
+  const speed = pick(log, ['vehicleSpeed'])
+  const wheelHp = log.channels.find((c) => c.id === '__derived_wheel_hp')?.id
+  const crankHp = log.channels.find((c) => c.id === '__derived_crank_hp')?.id
+  const crankTq = log.channels.find((c) => c.id === '__derived_crank_torque')?.id
+  const hpFromTq = log.channels.find((c) => c.id === '__derived_hp_from_torque')?.id
+  const tqFromHp = log.channels.find((c) => c.id === '__derived_torque_from_hp')?.id
+  const nativeHp = pick(log, ['power'])
+  const nativeTq = pick(log, ['torque'])
 
   return [
     {
@@ -74,6 +82,18 @@ export function buildBuiltinPresets(log: ParsedLog): LayoutPreset[] {
       name: 'Fueling',
       builtin: true,
       panes: singlePane('fueling', [fuelPrimary, cmdLambda, stft, ltft, load, rpm]),
+    },
+    {
+      id: 'power',
+      name: 'Power',
+      builtin: true,
+      panes: singlePane('power', [
+        wheelHp,
+        crankHp ?? hpFromTq ?? nativeHp,
+        crankTq ?? tqFromHp ?? nativeTq,
+        speed,
+        rpm,
+      ]),
     },
   ]
 }

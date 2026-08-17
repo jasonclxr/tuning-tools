@@ -219,7 +219,7 @@ export function distanceUnitLabel(unit: DistanceUnit): string {
   return unit === 'mi' ? 'mi' : 'km'
 }
 
-function powerUnitLabel(unit: PowerUnit): string {
+export function powerUnitLabel(unit: PowerUnit): string {
   return unit
 }
 

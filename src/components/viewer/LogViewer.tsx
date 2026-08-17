@@ -9,13 +9,15 @@ import {
   saveCustomLayout,
 } from '../../lib/presets'
 import { adaptLogForDisplay } from '../../lib/units'
+import { addPowerTorqueChannels } from '../../lib/powerTorque'
 import type { ChartPane, LayoutPreset, ParsedLog, TimeRange } from '../../lib/types'
 import { UPlotPane } from '../charts/UPlotPane'
 import { ChannelPicker } from './ChannelPicker'
 import { HistogramPanel } from './HistogramPanel'
 import { MapTablePanel } from './MapTablePanel'
+import { PowerPanel } from './PowerPanel'
 
-type ViewerPage = 'charts' | 'map' | 'histogram'
+type ViewerPage = 'charts' | 'map' | 'histogram' | 'power'
 
 interface Props {
   log: ParsedLog
@@ -23,7 +25,10 @@ interface Props {
 
 export function LogViewer({ log }: Props) {
   const { settings } = useSettings()
-  const displayLog = useMemo(() => adaptLogForDisplay(log, settings), [log, settings])
+  const displayLog = useMemo(() => {
+    const withPower = addPowerTorqueChannels(log, settings)
+    return adaptLogForDisplay(withPower, settings)
+  }, [log, settings])
   const builtins = useMemo(() => buildBuiltinPresets(displayLog), [displayLog])
   const [customs, setCustoms] = useState<LayoutPreset[]>(() => loadCustomLayouts())
   const [presetId, setPresetId] = useState(builtins[0]?.id ?? 'custom')
@@ -175,6 +180,13 @@ export function LogViewer({ log }: Props) {
           onClick={() => setPage('map')}
         >
           Map table
+        </button>
+        <button
+          type="button"
+          className={page === 'power' ? 'active' : ''}
+          onClick={() => setPage('power')}
+        >
+          Power
         </button>
         <button
           type="button"
@@ -339,6 +351,12 @@ export function LogViewer({ log }: Props) {
       {page === 'map' && (
         <div className="viewer-page-content">
           <MapTablePanel log={displayLog} range={analysisRange} />
+        </div>
+      )}
+
+      {page === 'power' && (
+        <div className="viewer-page-content">
+          <PowerPanel log={displayLog} range={analysisRange} />
         </div>
       )}
 

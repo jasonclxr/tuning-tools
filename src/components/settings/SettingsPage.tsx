@@ -1,7 +1,10 @@
 import { DEFAULT_SETTINGS, type AppSettings } from '../../lib/settings'
 import { useSettings } from '../../context/SettingsContext'
 
-type UnitKey = Exclude<keyof AppSettings, 'stoichAfr'>
+type UnitKey = Exclude<
+  keyof AppSettings,
+  'stoichAfr' | 'vehicleWeightLb' | 'drivetrainLossPercent' | 'estimatePowerFromSpeed'
+>
 
 interface UnitRow {
   key: UnitKey
@@ -156,6 +159,59 @@ export function SettingsPage() {
             }}
           />
           <span className="settings-hint">Default {DEFAULT_SETTINGS.stoichAfr} (gasoline)</span>
+        </label>
+      </section>
+
+      <section className="settings-card">
+        <h3>Power / torque estimate</h3>
+        <p className="settings-card-note">
+          When vehicle speed is logged, wheel HP is estimated from weight × speed × accel (level
+          ground, no aero). Crank HP applies drivetrain loss. Logged torque/HP still convert via
+          HP = TQ × RPM / 5252 when present.
+        </p>
+        <label className="settings-check">
+          <input
+            type="checkbox"
+            checked={settings.estimatePowerFromSpeed}
+            onChange={(e) => updateSettings({ estimatePowerFromSpeed: e.target.checked })}
+          />
+          Estimate HP/torque from vehicle speed
+        </label>
+        <label className="settings-field">
+          <span>Vehicle weight (lb)</span>
+          <input
+            type="number"
+            min={500}
+            max={20000}
+            step={10}
+            value={settings.vehicleWeightLb}
+            onChange={(e) => {
+              const v = Number(e.target.value)
+              if (Number.isFinite(v) && v > 0) updateSettings({ vehicleWeightLb: v })
+            }}
+          />
+          <span className="settings-hint">
+            Include driver/fuel as tested · default {DEFAULT_SETTINGS.vehicleWeightLb} lb
+          </span>
+        </label>
+        <label className="settings-field">
+          <span>Drivetrain loss (%)</span>
+          <input
+            type="number"
+            min={0}
+            max={50}
+            step={1}
+            value={settings.drivetrainLossPercent}
+            onChange={(e) => {
+              const v = Number(e.target.value)
+              if (Number.isFinite(v)) {
+                updateSettings({ drivetrainLossPercent: Math.min(50, Math.max(0, v)) })
+              }
+            }}
+          />
+          <span className="settings-hint">
+            Used for crank HP from wheel HP · default {DEFAULT_SETTINGS.drivetrainLossPercent}%
+          </span>
         </label>
       </section>
 
