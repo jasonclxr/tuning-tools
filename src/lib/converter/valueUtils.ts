@@ -4,7 +4,9 @@ export function getSourceValue(
   logicalName: string,
 ): string | undefined {
   const header = sourceColumns[logicalName]
-  return header ? row[header] : undefined
+  if (!header) return undefined
+  const value = row[header]
+  return value === undefined ? undefined : String(value).trim()
 }
 
 export function readNumber(row: Record<string, string>, columnName: string | undefined): number {
@@ -24,5 +26,5 @@ export function normalizeValue(value: string | number | null | undefined): strin
     if (!Number.isFinite(value)) return ''
     return value.toFixed(10).replace(/(?:\.0+|(\.\d+?)0+)$/, '$1')
   }
-  return String(value)
+  return String(value).trim()
 }

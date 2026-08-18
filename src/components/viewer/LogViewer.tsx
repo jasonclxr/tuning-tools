@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSettings } from '../../context/SettingsContext'
 import { indexNearTime } from '../../lib/downsample'
 import { downloadText, exportLogRangeCsv } from '../../lib/exportCsv'
+import { logSourceLabel } from '../../lib/logFormat'
 import {
   buildBuiltinPresets,
   deleteCustomLayout,
@@ -216,6 +217,8 @@ export function LogViewer({ log }: Props) {
             <div className="meta-card">
               <div className="meta-title">{log.meta.filename}</div>
               <div className="meta-grid">
+                <span>Source</span>
+                <strong>{logSourceLabel(log.meta.source)}</strong>
                 <span>Rows</span>
                 <strong>{log.meta.rowCount.toLocaleString()}</strong>
                 <span>Duration</span>

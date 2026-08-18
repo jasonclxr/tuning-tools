@@ -3,6 +3,7 @@ import {
   buildMapTable,
   cellColor,
   defaultLoadEdges,
+  defaultLoadEdgesForChannel,
   defaultMapPsiEdges,
   defaultRpmEdges,
   formatEdgesForInput,
@@ -43,7 +44,7 @@ export function MapTablePanel({ log, range }: Props) {
   const [xEdgesText, setXEdgesText] = useState(() => formatEdgesForInput(defaultRpmEdges()))
   const [yEdgesText, setYEdgesText] = useState(() => {
     const yCh = log.channels.find((c) => c.id === suggested.yId)
-    if (yCh?.role === 'absoluteLoad') return formatEdgesForInput(defaultLoadEdges())
+    if (yCh?.role === 'absoluteLoad') return formatEdgesForInput(defaultLoadEdgesForChannel(yCh))
     if (yCh?.role === 'boost' || yCh?.name.toLowerCase().includes('boost')) {
       return formatEdgesForInput(defaultMapPsiEdges())
     }
@@ -144,7 +145,9 @@ export function MapTablePanel({ log, range }: Props) {
             const yCh = log.channels.find((c) => c.id === s.yId)
             setYEdgesText(
               formatEdgesForInput(
-                yCh?.role === 'absoluteLoad' ? defaultLoadEdges() : defaultMapPsiEdges(),
+                yCh?.role === 'absoluteLoad'
+                  ? defaultLoadEdgesForChannel(yCh)
+                  : defaultMapPsiEdges(),
               ),
             )
             setAgg('avg')

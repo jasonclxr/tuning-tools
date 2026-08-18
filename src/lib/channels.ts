@@ -3,23 +3,42 @@ import type { ChannelRole } from './types'
 /** Ordered candidates for each logical role (exact VersaTuner header match first). */
 export const ROLE_ALIASES: Record<ChannelRole, string[]> = {
   time: ['Time (s)', 'Time', 'time'],
-  rpm: ['Engine RPM', 'RPM', 'Engine Speed'],
+  rpm: ['Engine RPM', 'RPM', 'Engine Speed', 'Engine speed (RPM)'],
   throttle: [
     'Absolute throttle position 1 (%)',
     'Absolute throttle position (%)',
     'Throttle position (%)',
     'Throttle Position (%)',
+    'Absolute Throttle Position (OBD) (%)',
+    'Throttle position 1 (%)',
   ],
   acceleratorPedal: [
     'Accelerator pedal position (%)',
     'Accelerator Pedal Position (%)',
     'APP (%)',
+    'Accel Pedal Position Sensor 1 (%)',
   ],
-  absoluteLoad: ['Absolute load', 'Absolute Load', 'Calculated load', 'Engine load'],
+  absoluteLoad: [
+    'Absolute load',
+    'Absolute Load',
+    'Calculated load',
+    'Calculated Engine Load (OBD) (%)',
+    'Engine Load (%)',
+    'Engine load',
+  ],
   mapKpa: [
     'Intake manifold absolute pressure (kPa)',
     'Manifold Absolute Pressure (kPa)',
     'MAP (kPa)',
+    'Manifold absolute pressure (PSI)',
+    'Manifold Absolute Pressure (PSI)',
+  ],
+  baro: [
+    'Barometric pressure (kPa)',
+    'Barometric Pressure (kPa)',
+    'Baro (kPa)',
+    'Barometric pressure (PSI)',
+    'Barometric Pressure (PSI)',
   ],
   boost: [
     'Boost (psi)',
@@ -47,6 +66,8 @@ export const ROLE_ALIASES: Record<ChannelRole, string[]> = {
     'AFR',
     'Wideband AFR',
     'Air Fuel Ratio',
+    'Actual AFR (AFR)',
+    'Air fuel ratio (AFR)',
   ],
   actualLambda: [
     'Actual equivalence/air to fuel ratio (λ)',
@@ -66,33 +87,70 @@ export const ROLE_ALIASES: Record<ChannelRole, string[]> = {
     'Ignition Timing (°)',
     'Timing Advance (°)',
     'Spark Advance (°)',
+    'Ignition timing (deg)',
+    'Ignition Timing (deg)',
   ],
-  knockRetard: ['Knock retard (°)', 'Knock Retard (°)', 'KR (°)', 'Knock Retard'],
+  knockRetard: [
+    'Knock retard (°)',
+    'Knock Retard (°)',
+    'KR (°)',
+    'Knock Retard',
+    'Knock retard (deg)',
+    'Knock Retard (deg)',
+  ],
   shortTermFuelTrim: [
     'Short term fuel trim (primary sensor) (%)',
     'Short Term Fuel Trim (%)',
     'STFT (%)',
+    'Short fuel trim 1 (%)',
   ],
   longTermFuelTrim: [
     'Long term fuel trim (%)',
     'Long Term Fuel Trim (%)',
     'LTFT (%)',
+    'Long fuel trim 1 (%)',
   ],
-  intakeAirTemp: ['Intake air temperature (°F)', 'IAT (°F)', 'Intake Air Temp (°F)'],
+  intakeAirTemp: [
+    'Intake air temperature (°F)',
+    'IAT (°F)',
+    'Intake Air Temp (°F)',
+    'Intake Air Temperature (F)',
+    'Intake air temperature (F)',
+  ],
   manifoldAirTemp: [
     'Manifold air temperature (°F)',
     'Intake air temperature (°F)',
     'MAT (°F)',
   ],
-  coolantTemp: ['Engine coolant temperature (°F)', 'ECT (°F)', 'Coolant Temp (°F)'],
-  ambientTemp: ['Ambient air temperature (°F)', 'Ambient Temp (°F)'],
+  coolantTemp: [
+    'Engine coolant temperature (°F)',
+    'ECT (°F)',
+    'Coolant Temp (°F)',
+    'Engine coolant temperature (F)',
+    'Engine Coolant Temperature S1 (F)',
+  ],
+  ambientTemp: [
+    'Ambient air temperature (°F)',
+    'Ambient Temp (°F)',
+    'Ambient Air Temperature (F)',
+  ],
+  oilTemp: ['Oil Temperature (F)', 'Oil temperature (°F)', 'Oil Temp (°F)', 'EOT (°F)'],
   mafGps: [
     'Mass airflow (g/s)',
     'MAF (g/s)',
     'Mass Airflow (g/s)',
     'Mass Air Flow (g/s)',
+    'Mass air flow (g/s)',
   ],
-  vehicleSpeed: ['Vehicle speed (mph)', 'Vehicle Speed (mph)', 'VSS (mph)', 'Speed (mph)'],
+  vehicleSpeed: [
+    'Vehicle speed (mph)',
+    'Vehicle Speed (mph)',
+    'VSS (mph)',
+    'Speed (mph)',
+    'Vehicle speed (kph)',
+    'Vehicle Speed (kph)',
+    'Vehicle speed (km/h)',
+  ],
   distance: [
     'Distance (mi)',
     'Distance (miles)',
@@ -124,20 +182,36 @@ export const ROLE_ALIASES: Record<ChannelRole, string[]> = {
     'Fuel injection volume (mm³)',
     'Injection volume (mm3)',
   ],
+  fuelPressure: [
+    'Fuel Pressure (mPa)',
+    'Fuel pressure (mPa)',
+    'Fuel Pressure (MPa)',
+    'Fuel Rail Pressure (psi)',
+    'Fuel pressure (psi)',
+  ],
+  oilPressure: ['Engine Oil Pressure (PSI)', 'Engine oil pressure (psi)', 'Oil Pressure (psi)'],
   catalystTemp: ['Catalyst Temperature (%)', 'Catalyst Temperature (°F)', 'Catalyst Temp'],
   intakeCamDesired: [
     'Desired intake camshaft advance from max retard position (°)',
+    'VVT Intake Desired (deg)',
   ],
   intakeCamActual: [
     'Actual intake camshaft advance from max retard position (°)',
+    'VVT Intake Actual Position (deg)',
   ],
   exhaustCamDesired: [
     'Desired exhaust camshaft retard from max advance position (°)',
+    'VVT Exhaust Desired (deg)',
   ],
   exhaustCamActual: [
     'Actual exhaust camshaft retard from max advance position (°)',
+    'VVT Exhaust Actual Position (deg)',
   ],
-  injectorPulseWidth: ['Fuel injection pulse width (ms)', 'Injector Pulse Width (ms)'],
+  injectorPulseWidth: [
+    'Fuel injection pulse width (ms)',
+    'Injector Pulse Width (ms)',
+    'Fuel pulse width (ms)',
+  ],
 }
 
 const HEADER_UNIT_RE = /^(.*?)\s*\(([^)]+)\)\s*$/
@@ -163,7 +237,11 @@ export function resolveRoleForHeader(header: string): ChannelRole | null {
 export function resolveSourceColumns(
   headers: string[],
 ): Partial<Record<ChannelRole, string>> {
-  const lowerMap = new Map(headers.map((h) => [h.toLowerCase(), h]))
+  const lowerMap = new Map<string, string>()
+  for (const header of headers) {
+    const key = header.toLowerCase()
+    if (!lowerMap.has(key)) lowerMap.set(key, header)
+  }
   const result: Partial<Record<ChannelRole, string>> = {}
 
   for (const [role, aliases] of Object.entries(ROLE_ALIASES) as [ChannelRole, string[]][]) {

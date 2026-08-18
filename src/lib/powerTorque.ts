@@ -1,6 +1,7 @@
 import type { AppSettings } from './settings'
 import type { ParsedChannel, ParsedLog, TimeRange } from './types'
 import { indexNearTime } from './downsample'
+import { detectSpeedUnit } from './units'
 
 /** HP = TQ(lb·ft) × RPM / 5252 */
 export const HP_TQ_RPM_FACTOR = 5252
@@ -122,7 +123,7 @@ export function addPowerTorqueChannels(log: ParsedLog, settings: AppSettings): P
   if (settings.estimatePowerFromSpeed && speed && settings.vehicleWeightLb > 0) {
     // Speed channel may already be in preferred units on display path — callers should
     // pass source log (mph) before unit adapt, or we detect unit.
-    const speedIsKmh = (speed.unit ?? '').toLowerCase().includes('km')
+    const speedIsKmh = detectSpeedUnit(speed.unit) === 'kmh'
     const speedMph = new Float64Array(n)
     for (let i = 0; i < n; i++) {
       const v = speed.data[i]

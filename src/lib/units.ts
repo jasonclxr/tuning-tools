@@ -12,8 +12,11 @@ import type {
 } from './settings'
 import type { ParsedChannel, ParsedLog } from './types'
 
+export type SourcePressureUnit = PressureUnit | 'MPa'
+
 const KPA_PER_PSI = 6.8947572932
 const BAR_PER_KPA = 0.01
+const KPA_PER_MPA = 1000
 const KMH_PER_MPH = 1.609344
 const KM_PER_MI = 1.609344
 const KW_PER_HP = 0.745699872
@@ -54,10 +57,11 @@ function convertTempArray(
   return out
 }
 
-function pressureToKpa(from: PressureUnit): number {
+function pressureToKpa(from: SourcePressureUnit): number {
   if (from === 'kPa') return 1
   if (from === 'psi') return KPA_PER_PSI
-  return 1 / BAR_PER_KPA
+  if (from === 'bar') return 1 / BAR_PER_KPA
+  return KPA_PER_MPA
 }
 
 function pressureFromKpa(to: PressureUnit): number {
@@ -66,13 +70,26 @@ function pressureFromKpa(to: PressureUnit): number {
   return BAR_PER_KPA
 }
 
-function normalizePressureUnit(unit: string | null | undefined): PressureUnit | null {
+export function detectPressureUnit(unit: string | null | undefined): SourcePressureUnit | null {
   if (!unit) return null
-  const u = unit.toLowerCase()
+  const u = unit.toLowerCase().replace(/\s/g, '')
+  if (u === 'mpa') return 'MPa'
   if (u.includes('kpa')) return 'kPa'
   if (u.includes('psi')) return 'psi'
   if (u.includes('bar')) return 'bar'
   return null
+}
+
+export function convertPressureValue(
+  value: number,
+  from: SourcePressureUnit,
+  to: PressureUnit,
+): number {
+  return value * pressureToKpa(from) * pressureFromKpa(to)
+}
+
+function normalizePressureUnit(unit: string | null | undefined): SourcePressureUnit | null {
+  return detectPressureUnit(unit)
 }
 
 function detectTempUnit(unit: string | null): TemperatureUnit | null {
@@ -83,12 +100,17 @@ function detectTempUnit(unit: string | null): TemperatureUnit | null {
   return null
 }
 
-function detectSpeedUnit(unit: string | null): SpeedUnit | null {
+export function detectSpeedUnit(unit: string | null): SpeedUnit | null {
   if (!unit) return null
-  const u = unit.toLowerCase()
+  const u = unit.toLowerCase().replace(/\s/g, '')
   if (u.includes('mph')) return 'mph'
-  if (u.includes('km')) return 'kmh'
+  if (u.includes('km') || u === 'kph' || u.includes('kph')) return 'kmh'
   return null
+}
+
+export function convertSpeedValue(value: number, from: SpeedUnit, to: SpeedUnit): number {
+  if (from === to) return value
+  return from === 'mph' ? value * KMH_PER_MPH : value / KMH_PER_MPH
 }
 
 function detectDistanceUnit(unit: string | null): DistanceUnit | null {
@@ -246,9 +268,22 @@ export function fuelVolumeUnitLabel(unit: FuelVolumeUnit): string {
 function adaptChannel(ch: ParsedChannel, settings: AppSettings): ParsedChannel {
   const stoich = settings.stoichAfr
 
-  if (ch.role === 'mapKpa' || ch.role === 'boost' || ch.role === 'targetBoost' || ch.id === '__derived_boost_error') {
+  if (
+    ch.role === 'mapKpa' ||
+    ch.role === 'boost' ||
+    ch.role === 'targetBoost' ||
+    ch.role === 'baro' ||
+    ch.role === 'fuelPressure' ||
+    ch.role === 'oilPressure' ||
+    ch.id === '__derived_boost_error'
+  ) {
     const from =
-      normalizePressureUnit(ch.unit) ?? (ch.role === 'mapKpa' ? 'kPa' : 'psi')
+      normalizePressureUnit(ch.unit) ??
+      (ch.role === 'mapKpa' || ch.role === 'baro'
+        ? 'kPa'
+        : ch.role === 'fuelPressure'
+          ? 'MPa'
+          : 'psi')
     const factor = pressureToKpa(from) * pressureFromKpa(settings.pressureUnit)
     return {
       ...ch,
@@ -261,7 +296,8 @@ function adaptChannel(ch: ParsedChannel, settings: AppSettings): ParsedChannel {
     ch.role === 'intakeAirTemp' ||
     ch.role === 'manifoldAirTemp' ||
     ch.role === 'coolantTemp' ||
-    ch.role === 'ambientTemp'
+    ch.role === 'ambientTemp' ||
+    ch.role === 'oilTemp'
   ) {
     const from = detectTempUnit(ch.unit) ?? 'F'
     return {

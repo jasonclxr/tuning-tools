@@ -1,3 +1,4 @@
+import { detectLogSource, inferTimeToSecondsFactor } from '../logFormat'
 import { loadBundledReference, buildHpCsvContent, type HpReference } from './hpReference'
 import { inferBarometricPressure, mapTargetValue } from './rowMapper'
 import {
@@ -5,6 +6,7 @@ import {
   resolveConverterColumns,
   type ConverterColumnKey,
 } from './sourceColumns'
+import type { LogSource } from '../types'
 
 export interface ConversionReport {
   mappedColumns: { logical: ConverterColumnKey; header: string }[]
@@ -12,6 +14,7 @@ export interface ConversionReport {
   unmappedSourceHeaders: string[]
   rowCount: number
   barometricPressureKpa: number
+  source: LogSource
 }
 
 export interface ConversionResult {
@@ -32,7 +35,9 @@ const ALL_LOGICAL: ConverterColumnKey[] = [
   'rpm',
   'timingAdvance',
   'intakeAirTemp',
+  'ambientTemp',
   'mapKpa',
+  'baro',
   'knockRetard',
   'longTermFuelTrim',
   'manifoldAirTemp',
@@ -45,6 +50,7 @@ const ALL_LOGICAL: ConverterColumnKey[] = [
   'exhaustCamDesired',
   'exhaustCamActual',
   'injectorPulseWidth',
+  'fuelPressure',
 ]
 
 export async function convertVersaToHp(
@@ -54,12 +60,20 @@ export async function convertVersaToHp(
   reference?: HpReference,
 ): Promise<ConversionResult> {
   const ref = reference ?? (await loadBundledReference())
+  const source = detectLogSource(headers)
   const sourceColumns = resolveConverterColumns(headers)
   const barometricPressureKpa = inferBarometricPressure(sourceRows, sourceColumns)
   const unmappedSourceHeaders = findUnmappedSourceHeaders(headers, sourceColumns)
+  const timeHeader = sourceColumns.time
+  const rawTimes = timeHeader
+    ? sourceRows.map((row) => Number.parseFloat(row[timeHeader] ?? ''))
+    : []
+  const timeToSeconds = timeHeader ? inferTimeToSecondsFactor(timeHeader, rawTimes) : 1
 
   const outputRows = sourceRows.map((row) =>
-    ref.labels.map((label) => mapTargetValue(label, row, sourceColumns, barometricPressureKpa)),
+    ref.labels.map((label) =>
+      mapTargetValue(label, row, sourceColumns, barometricPressureKpa, timeToSeconds),
+    ),
   )
 
   const mappedColumns = (Object.entries(sourceColumns) as [ConverterColumnKey, string][])
@@ -78,6 +92,7 @@ export async function convertVersaToHp(
       unmappedSourceHeaders,
       rowCount: sourceRows.length,
       barometricPressureKpa,
+      source,
     },
   }
 }

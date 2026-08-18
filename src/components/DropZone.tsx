@@ -54,7 +54,7 @@ export function DropZone({ onFile, accept = '.csv,text/csv', children, busy }: P
       />
       {children ?? (
         <>
-          <strong>Drop VersaTuner CSV</strong>
+          <strong>Drop VersaTuner or MazdaEdit CSV</strong>
           <span>or click to browse</span>
         </>
       )}

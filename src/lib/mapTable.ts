@@ -68,6 +68,25 @@ export function defaultLoadEdges(): number[] {
   return edges
 }
 
+/** Calculated / OBD engine load in percent (MazdaEdit and similar). */
+export function defaultLoadPercentEdges(): number[] {
+  const edges: number[] = []
+  for (let p = 0; p <= 100; p += 10) edges.push(p)
+  return edges
+}
+
+export function isPercentLoad(ch: { unit: string | null; role?: string | null }): boolean {
+  const u = (ch.unit ?? '').toLowerCase()
+  return u.includes('%') || u.includes('percent')
+}
+
+export function defaultLoadEdgesForChannel(
+  ch: { unit: string | null; role?: string | null } | undefined,
+): number[] {
+  if (ch && isPercentLoad(ch)) return defaultLoadPercentEdges()
+  return defaultLoadEdges()
+}
+
 /** Format edges for the editable edge-list inputs. */
 export function formatEdgesForInput(edges: number[]): string {
   return edges

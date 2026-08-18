@@ -1,6 +1,6 @@
 # VersaTuner CSV schema notes
 
-Based on real sample exports inspected during v1 setup.
+Based on real sample exports inspected during v1 setup. MazdaEdit notes added from a SkyActiv / MazdaEdit CSV export.
 
 ## Format
 
@@ -42,17 +42,39 @@ Adds cam angles, MAF, injector PW, catalyst temp, accelerator pedal; uses λ ins
 Logical roles map to the best available header (see `src/lib/channels.ts`):
 
 - `time`, `rpm`, `throttle`, `acceleratorPedal`
-- `mapKpa`, `boost` (or derived from MAP − baro)
+- `mapKpa`, `baro`, `boost` (or derived from MAP − baro)
 - `targetBoost`, `wgdc` (optional — absent in current samples)
 - `afrGas` / `actualLambda` / `commandedLambda`
 - `timingAdvance`, `knockRetard`
-- `absoluteLoad`, fuel trims, temps, MAF, vehicle speed, cams, injector PW
+- `absoluteLoad`, fuel trims, temps (including oil), MAF, vehicle speed, cams, injector PW
+- `fuelPressure`, `oilPressure` (MazdaEdit)
 
 ## Derived channels (viewer)
 
 When source data allows:
 
-- **Boost (psi)** — from MAP (kPa) − inferred baro, converted to psi
+- **Boost (psi)** — from MAP − baro (native baro when present, otherwise inferred from early MAP), converted to psi
 - **Boost error** — Boost − Target Boost (if target present)
 - **AFR/λ error** — actual − commanded/desired
 - **Knock activity** — abs(knock retard) or knock > 0 flag
+
+## Sample C — MazdaEdit
+
+File: `ECOBOOST-VX-LIGHT-DRIVE.csv` (~3.4k rows, ~3.5 Hz)
+
+MazdaEdit exports the same CSV shape (header row with units in parentheses, numeric samples) with different channel names and units:
+
+| Channel | Notes |
+|---|---|
+| Time | Milliseconds (converted to seconds on import) |
+| Engine speed (RPM) | RPM |
+| Calculated Engine Load (OBD) (%) | Percent 0–100, not VersaTuner fraction |
+| Manifold absolute pressure (PSI) | Absolute MAP in psi |
+| Barometric pressure (PSI) | Native baro — used for derived boost |
+| Actual AFR (AFR) | Wideband / actual AFR |
+| Vehicle speed (kph) | Converted to preferred speed unit in the viewer |
+| Ignition timing (deg) / Knock retard (deg) | Degrees |
+| VVT Intake/Exhaust Desired & Actual (deg) | Cam angles |
+| Fuel pulse width (ms) | Injector PW |
+| Fuel Pressure (mPa) | Rail pressure in MPa (`mPa` in the export) |
+

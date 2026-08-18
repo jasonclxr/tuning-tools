@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { convertVersaToHp, type ConversionReport } from '../../lib/converter/convert'
 import { downloadText } from '../../lib/exportCsv'
+import { logSourceLabel } from '../../lib/logFormat'
 import { parseVersaCsvFile } from '../../lib/parseVersaCsv'
 import { DropZone } from '../DropZone'
 
@@ -30,16 +31,16 @@ export function ConverterTool() {
   return (
     <div className="converter">
       <div className="converter-intro">
-        <h2>VersaTuner → HPTuners</h2>
+        <h2>VersaTuner / MazdaEdit → HPTuners</h2>
         <p>
-          Converts a VersaTuner CSV into an HPTuners / VCM Scanner–style CSV using the same channel
-          mappings and unit conversions as the <code>tuning-tools</code> / <code>versa-tools</code>{' '}
-          converter. Runs entirely in your browser.
+          Converts a VersaTuner or MazdaEdit CSV into an HPTuners / VCM Scanner–style CSV using the
+          same channel mappings and unit conversions as the <code>tuning-tools</code> /{' '}
+          <code>versa-tools</code> converter. Runs entirely in your browser.
         </p>
       </div>
 
       <DropZone onFile={onFile} busy={busy}>
-        <strong>{busy ? 'Converting…' : 'Drop VersaTuner CSV to convert'}</strong>
+        <strong>{busy ? 'Converting…' : 'Drop VersaTuner or MazdaEdit CSV to convert'}</strong>
         <span>HPTuners-compatible CSV downloads automatically</span>
       </DropZone>
 
@@ -49,9 +50,11 @@ export function ConverterTool() {
         <div className="mapping-report">
           <h3>Mapping report{filename ? ` — ${filename}` : ''}</h3>
           <div className="meta-grid compact">
+            <span>Source</span>
+            <strong>{logSourceLabel(report.source)}</strong>
             <span>Rows</span>
             <strong>{report.rowCount.toLocaleString()}</strong>
-            <span>Baro (inferred)</span>
+            <span>Baro</span>
             <strong>{report.barometricPressureKpa.toFixed(3)} kPa</strong>
             <span>Mapped</span>
             <strong>{report.mappedColumns.length}</strong>

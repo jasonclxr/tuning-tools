@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "homepage": "https://jasonclxr.github.io/versa-tools",
-  "description": "Local-first VersaTuner datalog viewer and HPTuners converter",
+  "description": "Local-first VersaTuner / MazdaEdit datalog viewer and HPTuners converter",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jasonclxr/versa-tools.git"

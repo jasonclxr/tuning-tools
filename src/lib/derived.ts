@@ -1,22 +1,27 @@
 import { resolveSourceColumns } from './channels'
 import type { ParsedChannel, ParsedLog } from './types'
+import { convertPressureValue, detectPressureUnit, type SourcePressureUnit } from './units'
 
 const STOICH_AFR_GAS = 14.7
-const KPA_TO_PSI = 0.1450377377
 
 function channelByRole(log: ParsedLog, role: ParsedChannel['role']): ParsedChannel | undefined {
   return log.channels.find((c) => c.role === role)
 }
 
-function inferBaroKpa(map: Float64Array): number {
+function inferBaroNative(map: Float64Array): number {
   // Use early MAP samples as baro proxy (key-on / idle ambient) — same idea as converter.
   const samples: number[] = []
   for (let i = 0; i < Math.min(map.length, 50); i++) {
     if (Number.isFinite(map[i])) samples.push(map[i])
   }
-  if (samples.length === 0) return 101.325
+  if (samples.length === 0) return Number.NaN
   samples.sort((a, b) => a - b)
   return samples[Math.floor(samples.length * 0.1)] ?? samples[0]
+}
+
+function toPsi(value: number, unit: string | null, fallback: SourcePressureUnit): number {
+  const from = detectPressureUnit(unit) ?? fallback
+  return convertPressureValue(value, from, 'psi')
 }
 
 function pushDerived(log: ParsedLog, channel: ParsedChannel) {
@@ -29,6 +34,7 @@ export function addDerivedChannels(log: ParsedLog): void {
   const roles = resolveSourceColumns(log.headers)
   const mapCh = channelByRole(log, 'mapKpa')
   const boostCh = channelByRole(log, 'boost')
+  const baroCh = channelByRole(log, 'baro')
   const targetBoostCh = channelByRole(log, 'targetBoost')
   const afrCh = channelByRole(log, 'afrGas')
   const lambdaCh = channelByRole(log, 'actualLambda')
@@ -38,11 +44,31 @@ export function addDerivedChannels(log: ParsedLog): void {
   let boostData: Float64Array | undefined = boostCh?.data
 
   if (!boostData && mapCh) {
-    const baro = inferBaroKpa(mapCh.data)
+    const mapFallback: SourcePressureUnit = detectPressureUnit(mapCh.unit) ?? 'kPa'
+    const baroFallback: SourcePressureUnit =
+      detectPressureUnit(baroCh?.unit ?? null) ?? mapFallback
+    const inferredBaroNative = baroCh ? Number.NaN : inferBaroNative(mapCh.data)
+    const inferredBaroPsi = Number.isFinite(inferredBaroNative)
+      ? toPsi(inferredBaroNative, mapCh.unit, mapFallback)
+      : Number.NaN
+    const stdBaroPsi = convertPressureValue(101.325, 'kPa', 'psi')
+
     const data = new Float64Array(n)
     for (let i = 0; i < n; i++) {
       const map = mapCh.data[i]
-      data[i] = Number.isFinite(map) ? (map - baro) * KPA_TO_PSI : NaN
+      if (!Number.isFinite(map)) {
+        data[i] = Number.NaN
+        continue
+      }
+      const mapPsi = toPsi(map, mapCh.unit, mapFallback)
+      if (baroCh) {
+        const baro = baroCh.data[i]
+        data[i] = Number.isFinite(baro)
+          ? mapPsi - toPsi(baro, baroCh.unit, baroFallback)
+          : Number.NaN
+      } else {
+        data[i] = mapPsi - (Number.isFinite(inferredBaroPsi) ? inferredBaroPsi : stdBaroPsi)
+      }
     }
     const derived: ParsedChannel = {
       id: '__derived_boost_psi',

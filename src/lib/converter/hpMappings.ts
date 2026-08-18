@@ -5,6 +5,9 @@ type Ctx = {
   row: Record<string, string>
   sourceColumns: Partial<Record<ConverterColumnKey, string>>
   getSourceValue: typeof getSourceValue
+  timeToSeconds: number
+  readSpeedMph: () => number | undefined
+  readFuelPressurePsi: () => number | undefined
 }
 
 export const STATIC_VALUES = new Map<string, string | number>([
@@ -19,7 +22,14 @@ export const STATIC_VALUES = new Map<string, string | number>([
 ])
 
 export const DIRECT_VALUE_SOURCES = new Map<string, (ctx: Ctx) => string | number | undefined>([
-  ['Offset', ({ row, sourceColumns }) => getSourceValue(row, sourceColumns, 'time')],
+  ['Offset', ({ row, sourceColumns, timeToSeconds }) => {
+    const raw = getSourceValue(row, sourceColumns, 'time')
+    if (raw === undefined || raw === '') return undefined
+    const n = Number.parseFloat(raw)
+    if (!Number.isFinite(n)) return raw
+    if (timeToSeconds === 1) return raw
+    return n * timeToSeconds
+  }],
   ['Knock Retard', ({ row, sourceColumns }) => getSourceValue(row, sourceColumns, 'knockRetard')],
   [
     'Short Term Fuel Trim Bank 1',
@@ -67,9 +77,14 @@ export const DIRECT_VALUE_SOURCES = new Map<string, (ctx: Ctx) => string | numbe
     'Short Term Fuel Trim Bank 1 (SAE)',
     ({ row, sourceColumns }) => getSourceValue(row, sourceColumns, 'shortTermFuelTrim'),
   ],
+  ['Vehicle Speed', ({ readSpeedMph }) => readSpeedMph()],
   [
-    'Vehicle Speed',
-    ({ row, sourceColumns }) => getSourceValue(row, sourceColumns, 'vehicleSpeed'),
+    'Fuel Pressure',
+    ({ readFuelPressurePsi }) => readFuelPressurePsi(),
+  ],
+  [
+    'Fuel Rail Pressure (SAE)',
+    ({ readFuelPressurePsi }) => readFuelPressurePsi(),
   ],
   [
     'Catalyst Temp B1S1 (SAE)',
@@ -89,7 +104,9 @@ export const DIRECT_VALUE_SOURCES = new Map<string, (ctx: Ctx) => string | numbe
   ],
   [
     'Ambient Air Temp',
-    ({ row, sourceColumns }) => getSourceValue(row, sourceColumns, 'intakeAirTemp'),
+    ({ row, sourceColumns }) =>
+      getSourceValue(row, sourceColumns, 'ambientTemp') ??
+      getSourceValue(row, sourceColumns, 'intakeAirTemp'),
   ],
   [
     'Intake Cam Des Angle',

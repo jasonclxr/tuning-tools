@@ -14,7 +14,9 @@ export type ConverterColumnKey =
   | 'rpm'
   | 'timingAdvance'
   | 'intakeAirTemp'
+  | 'ambientTemp'
   | 'mapKpa'
+  | 'baro'
   | 'knockRetard'
   | 'longTermFuelTrim'
   | 'manifoldAirTemp'
@@ -27,6 +29,7 @@ export type ConverterColumnKey =
   | 'exhaustCamDesired'
   | 'exhaustCamActual'
   | 'injectorPulseWidth'
+  | 'fuelPressure'
 
 const CONVERTER_ROLES: ConverterColumnKey[] = [
   'time',
@@ -40,7 +43,9 @@ const CONVERTER_ROLES: ConverterColumnKey[] = [
   'rpm',
   'timingAdvance',
   'intakeAirTemp',
+  'ambientTemp',
   'mapKpa',
+  'baro',
   'knockRetard',
   'longTermFuelTrim',
   'manifoldAirTemp',
@@ -53,6 +58,7 @@ const CONVERTER_ROLES: ConverterColumnKey[] = [
   'exhaustCamDesired',
   'exhaustCamActual',
   'injectorPulseWidth',
+  'fuelPressure',
 ]
 
 export function resolveConverterColumns(

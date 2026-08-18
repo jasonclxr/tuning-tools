@@ -1,3 +1,5 @@
+export type LogSource = 'versa' | 'mazdaedit' | 'unknown'
+
 export type ChannelRole =
   | 'time'
   | 'rpm'
@@ -5,6 +7,7 @@ export type ChannelRole =
   | 'acceleratorPedal'
   | 'absoluteLoad'
   | 'mapKpa'
+  | 'baro'
   | 'boost'
   | 'targetBoost'
   | 'wgdc'
@@ -19,6 +22,7 @@ export type ChannelRole =
   | 'manifoldAirTemp'
   | 'coolantTemp'
   | 'ambientTemp'
+  | 'oilTemp'
   | 'mafGps'
   | 'vehicleSpeed'
   | 'distance'
@@ -26,6 +30,8 @@ export type ChannelRole =
   | 'torque'
   | 'mass'
   | 'fuelVolume'
+  | 'fuelPressure'
+  | 'oilPressure'
   | 'catalystTemp'
   | 'intakeCamDesired'
   | 'intakeCamActual'
@@ -49,6 +55,7 @@ export interface LogMeta {
   sampleRateHz: number
   tMin: number
   tMax: number
+  source: LogSource
 }
 
 export interface ParsedLog {

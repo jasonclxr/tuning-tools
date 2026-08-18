@@ -109,7 +109,8 @@ export function SettingsPage() {
         <h2>Settings</h2>
         <p>
           Preferences are stored in this browser only (localStorage). Unit choices apply to the log
-          viewer display — raw CSV import and the HPTuners converter still use source values.
+          viewer display — raw CSV import and the HPTuners converter still use source values
+          (VersaTuner or MazdaEdit).
         </p>
       </div>
 

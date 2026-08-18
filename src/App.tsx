@@ -86,7 +86,7 @@ export default function App() {
             {!log ? (
               <div className="welcome">
                 <DropZone onFile={loadFile} busy={busy}>
-                  <strong>{busy ? 'Parsing…' : 'Open a VersaTuner CSV log'}</strong>
+                  <strong>{busy ? 'Parsing…' : 'Open a VersaTuner or MazdaEdit CSV log'}</strong>
                   <span>Drag & drop or click — parsing stays in your browser</span>
                 </DropZone>
                 <div className="sample-links">
@@ -110,6 +110,15 @@ export default function App() {
                     }
                   >
                     Load sample (λ)
+                  </button>
+                  <button
+                    type="button"
+                    className="ghost"
+                    onClick={() =>
+                      loadSample('samples/sample-mazdaedit-log.csv', 'sample-mazdaedit-log.csv')
+                    }
+                  >
+                    Load sample (MazdaEdit)
                   </button>
                 </div>
                 {error && <div className="error-banner">{error}</div>}

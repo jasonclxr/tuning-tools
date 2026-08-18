@@ -1,7 +1,8 @@
 import Papa from 'papaparse'
-import { parseHeader, resolveRoleForHeader, resolveSourceColumns } from './channels'
+import { parseHeader, resolveSourceColumns } from './channels'
 import { addDerivedChannels } from './derived'
-import type { ParsedChannel, ParsedLog } from './types'
+import { detectLogSource, inferTimeToSecondsFactor } from './logFormat'
+import type { ChannelRole, ParsedChannel, ParsedLog } from './types'
 
 function isNumericHeader(header: string): boolean {
   return header.trim().toLowerCase() !== ''
@@ -30,10 +31,16 @@ export function parseVersaCsvText(text: string, filename: string): ParsedLog {
   }
 
   const headers = (parsed.meta.fields ?? Object.keys(rows[0])).filter(isNumericHeader)
+  const source = detectLogSource(headers)
   const roles = resolveSourceColumns(headers)
   const timeHeader = roles.time ?? headers[0]
   if (!timeHeader) {
     throw new Error('Could not find a time column')
+  }
+
+  const roleByHeader = new Map<string, ChannelRole>()
+  for (const [role, header] of Object.entries(roles) as [ChannelRole, string][]) {
+    if (header && !roleByHeader.has(header)) roleByHeader.set(header, role)
   }
 
   const n = rows.length
@@ -53,7 +60,7 @@ export function parseVersaCsvText(text: string, filename: string): ParsedLog {
       id: header,
       name,
       unit,
-      role: resolveRoleForHeader(header),
+      role: roleByHeader.get(header) ?? null,
       data,
     })
   }
@@ -61,6 +68,13 @@ export function parseVersaCsvText(text: string, filename: string): ParsedLog {
   for (let i = 0; i < n; i++) {
     const v = Number.parseFloat(rows[i][timeHeader] ?? '')
     time[i] = Number.isFinite(v) ? v : NaN
+  }
+
+  const timeToSeconds = inferTimeToSecondsFactor(timeHeader, time)
+  if (timeToSeconds !== 1) {
+    for (let i = 0; i < n; i++) {
+      if (Number.isFinite(time[i])) time[i] *= timeToSeconds
+    }
   }
 
   // Drop leading/trailing fully-invalid time if any; keep indices aligned by not dropping mid-gaps
@@ -89,6 +103,7 @@ export function parseVersaCsvText(text: string, filename: string): ParsedLog {
       sampleRateHz,
       tMin,
       tMax,
+      source,
     },
     time,
     channels,
