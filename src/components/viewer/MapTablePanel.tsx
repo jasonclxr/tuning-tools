@@ -90,7 +90,7 @@ export function MapTablePanel({ log, range }: Props) {
   return (
     <div className="map-table-panel">
       <div className="panel-header">Map table (Y × X)</div>
-      <div className="hist-controls map-controls">
+      <div className="map-controls">
         <label>
           X (columns)
           <select value={xChannelId} onChange={(e) => setXChannelId(e.target.value)}>
@@ -166,7 +166,7 @@ export function MapTablePanel({ log, range }: Props) {
           <input value={yEdgesText} onChange={(e) => setYEdgesText(e.target.value)} />
         </label>
       </div>
-      <div className="hist-meta">
+      <div className="map-meta">
         hits={result?.hitCount ?? 0}
         {range ? ` · pull ${range.start.toFixed(2)}–${range.end.toFixed(2)}s` : ' · full log'}
         {hoverInfo && (

@@ -89,12 +89,3 @@ export interface LayoutPreset {
   builtin?: boolean
   panes: ChartPane[]
 }
-
-export interface HistogramFilter {
-  rpmMin?: number
-  rpmMax?: number
-  loadMin?: number
-  loadMax?: number
-  tpsMin?: number
-  tpsMax?: number
-}

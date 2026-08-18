@@ -14,11 +14,10 @@ import { addPowerTorqueChannels } from '../../lib/powerTorque'
 import type { ChartPane, LayoutPreset, ParsedLog, TimeRange } from '../../lib/types'
 import { UPlotPane } from '../charts/UPlotPane'
 import { ChannelPicker } from './ChannelPicker'
-import { HistogramPanel } from './HistogramPanel'
 import { MapTablePanel } from './MapTablePanel'
 import { PowerPanel } from './PowerPanel'
 
-type ViewerPage = 'charts' | 'map' | 'histogram' | 'power'
+type ViewerPage = 'charts' | 'map' | 'power'
 
 interface Props {
   log: ParsedLog
@@ -189,13 +188,6 @@ export function LogViewer({ log }: Props) {
         >
           Power
         </button>
-        <button
-          type="button"
-          className={page === 'histogram' ? 'active' : ''}
-          onClick={() => setPage('histogram')}
-        >
-          Histogram
-        </button>
         <div className="viewer-page-pull">
           <span>{pullLabel}</span>
           {analysisRange && (
@@ -360,12 +352,6 @@ export function LogViewer({ log }: Props) {
       {page === 'power' && (
         <div className="viewer-page-content">
           <PowerPanel log={displayLog} range={analysisRange} />
-        </div>
-      )}
-
-      {page === 'histogram' && (
-        <div className="viewer-page-content">
-          <HistogramPanel log={displayLog} range={analysisRange} />
         </div>
       )}
     </div>
