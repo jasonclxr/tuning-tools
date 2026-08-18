@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import uPlot from 'uplot'
 import 'uplot/dist/uPlot.min.css'
-import { downsampleMinMax } from '../../lib/downsample'
+import { downsampleAligned } from '../../lib/downsample'
 import type { ChartPane, ParsedChannel, ParsedLog, TimeRange } from '../../lib/types'
 
 interface Props {
@@ -434,6 +434,12 @@ export function UPlotPane({
   )
 }
 
+function emptyColumn(n: number): Float64Array {
+  const data = new Float64Array(n)
+  data.fill(Number.NaN)
+  return data
+}
+
 function buildData(
   log: ParsedLog,
   visibleSeries: ChartPane['series'],
@@ -446,36 +452,10 @@ function buildData(
     return [[xRange.start, xRange.end]]
   }
 
-  const prepared = visibleSeries.map((s) => {
+  const cols = visibleSeries.map((s) => {
     const ch = log.channels.find((c) => c.id === s.channelId)
-    if (!ch) return { x: [] as number[], y: [] as (number | null)[] }
-    return downsampleMinMax(log.time, ch.data, maxPoints, xRange.start, xRange.end)
+    return ch?.data ?? emptyColumn(log.time.length)
   })
-
-  const master = prepared.find((p) => p.x.length > 0) ?? prepared[0]
-  const xs = master.x
-  const cols: uPlot.AlignedData = [xs]
-
-  for (let s = 0; s < prepared.length; s++) {
-    const p = prepared[s]
-    if (p.x === xs) {
-      cols.push(p.y as number[])
-      continue
-    }
-    const y: (number | null)[] = xs.map((t) => {
-      if (!p.x.length) return null
-      let lo = 0
-      let hi = p.x.length - 1
-      while (lo < hi) {
-        const mid = (lo + hi) >> 1
-        if (p.x[mid] < t) lo = mid + 1
-        else hi = mid
-      }
-      const i = lo > 0 && Math.abs(p.x[lo - 1] - t) < Math.abs(p.x[lo] - t) ? lo - 1 : lo
-      return p.y[i] ?? null
-    })
-    cols.push(y as number[])
-  }
-
-  return cols
+  const aligned = downsampleAligned(log.time, cols, maxPoints, xRange.start, xRange.end)
+  return [aligned.x, ...aligned.ys]
 }

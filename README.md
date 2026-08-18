@@ -2,7 +2,7 @@
 
 Local-first VersaTuner / MazdaEdit datalog toolkit for the browser:
 
-1. **Log Viewer** — import VersaTuner or MazdaEdit CSV logs, multi-pane time-series charts, presets, RPM×Load map tables, range export
+1. **Log Viewer** — import VersaTuner or MazdaEdit CSV logs, multi-pane time-series charts, RPM×Load map tables, range export
 2. **HPTuners Converter** — VersaTuner or MazdaEdit → HPTuners / VCM Scanner–style CSV (ported from [`tuning-tools` / `versa-tools`](https://github.com/jasonclxr/tuning-tools))
 3. **Settings** — preferred display units (pressure, temperature, mixture, speed), stored in localStorage
 

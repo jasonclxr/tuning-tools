@@ -1,4 +1,4 @@
-import type { AppSettings } from './settings'
+import { testWeightLb, type AppSettings } from './settings'
 import type { ParsedChannel, ParsedLog, TimeRange } from './types'
 import { indexNearTime } from './downsample'
 import { detectSpeedUnit } from './units'
@@ -120,7 +120,7 @@ export function addPowerTorqueChannels(log: ParsedLog, settings: AppSettings): P
   }
 
   // VSS + weight → wheel HP estimate
-  if (settings.estimatePowerFromSpeed && speed && settings.vehicleWeightLb > 0) {
+  if (settings.estimatePowerFromSpeed && speed && testWeightLb(settings) > 0) {
     // Speed channel may already be in preferred units on display path — callers should
     // pass source log (mph) before unit adapt, or we detect unit.
     const speedIsKmh = detectSpeedUnit(speed.unit) === 'kmh'
@@ -140,7 +140,7 @@ export function addPowerTorqueChannels(log: ParsedLog, settings: AppSettings): P
       derived: true,
     })
 
-    const weight = settings.vehicleWeightLb
+    const weight = testWeightLb(settings)
     const wheelHp = new Float64Array(n)
     for (let i = 0; i < n; i++) {
       const v = speedMph[i]

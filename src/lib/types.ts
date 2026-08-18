@@ -82,10 +82,3 @@ export interface ChartPane {
   id: string
   series: PaneSeries[]
 }
-
-export interface LayoutPreset {
-  id: string
-  name: string
-  builtin?: boolean
-  panes: ChartPane[]
-}

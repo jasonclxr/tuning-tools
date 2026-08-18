@@ -37,7 +37,7 @@ File: `BStol SC - DRT v1.94-4.csv` (~1.9k rows, ~9 Hz)
 
 Adds cam angles, MAF, injector PW, catalyst temp, accelerator pedal; uses λ instead of AFR gas; no vehicle speed / ECT / ambient in this export.
 
-## Alias roles used by presets / converter
+## Alias roles used by the viewer / converter
 
 Logical roles map to the best available header (see `src/lib/channels.ts`):
 
@@ -53,7 +53,7 @@ Logical roles map to the best available header (see `src/lib/channels.ts`):
 
 When source data allows:
 
-- **Boost (psi)** — from MAP − baro (native baro when present, otherwise inferred from early MAP), converted to psi
+- **Boost (psi)** — from MAP − baro (native baro when present, otherwise inferred from early MAP); vacuum (≤ 0 psi) is omitted
 - **Boost error** — Boost − Target Boost (if target present)
 - **AFR/λ error** — actual − commanded/desired
 - **Knock activity** — abs(knock retard) or knock > 0 flag

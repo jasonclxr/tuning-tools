@@ -1,17 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSettings } from '../../context/SettingsContext'
 import { indexNearTime } from '../../lib/downsample'
 import { downloadText, exportLogRangeCsv } from '../../lib/exportCsv'
 import { logSourceLabel } from '../../lib/logFormat'
-import {
-  buildBuiltinPresets,
-  deleteCustomLayout,
-  loadCustomLayouts,
-  saveCustomLayout,
-} from '../../lib/presets'
+import { defaultChartPanes } from '../../lib/presets'
 import { adaptLogForDisplay } from '../../lib/units'
 import { addPowerTorqueChannels } from '../../lib/powerTorque'
-import type { ChartPane, LayoutPreset, ParsedLog, TimeRange } from '../../lib/types'
+import type { ChartPane, ParsedLog, TimeRange } from '../../lib/types'
 import { UPlotPane } from '../charts/UPlotPane'
 import { ChannelPicker } from './ChannelPicker'
 import { MapTablePanel } from './MapTablePanel'
@@ -31,13 +26,8 @@ export function LogViewer({ log, page, onPageChange }: Props) {
     const withPower = addPowerTorqueChannels(log, settings)
     return adaptLogForDisplay(withPower, settings)
   }, [log, settings])
-  const builtins = useMemo(() => buildBuiltinPresets(displayLog), [displayLog])
-  const [customs, setCustoms] = useState<LayoutPreset[]>(() => loadCustomLayouts())
-  const [presetId, setPresetId] = useState(builtins[0]?.id ?? 'custom')
-  const [panes, setPanes] = useState<ChartPane[]>(() => builtins[0]?.panes ?? [])
-  const [activePaneId, setActivePaneId] = useState(
-    () => builtins[0]?.panes[0]?.id ?? 'pane-1',
-  )
+  const [panes, setPanes] = useState<ChartPane[]>(() => defaultChartPanes(displayLog))
+  const [activePaneId, setActivePaneId] = useState('pane-1')
   const [xRange, setXRange] = useState<TimeRange>({
     start: log.meta.tMin,
     end: log.meta.tMax,
@@ -45,15 +35,13 @@ export function LogViewer({ log, page, onPageChange }: Props) {
   const [analysisRange, setAnalysisRange] = useState<TimeRange | null>(null)
   const [cursorTime, setCursorTime] = useState<number | null>(null)
   const [selectMode, setSelectMode] = useState(false)
-  const [saveName, setSaveName] = useState('')
   const chartStackRef = useRef<HTMLDivElement>(null)
   const [paneHeight, setPaneHeight] = useState(280)
 
   useEffect(() => {
-    const next = buildBuiltinPresets(displayLog)
-    setPresetId(next[0]?.id ?? 'custom')
-    setPanes(next[0]?.panes ?? [])
-    setActivePaneId(next[0]?.panes[0]?.id ?? 'pane-1')
+    const next = defaultChartPanes(displayLog)
+    setPanes(next)
+    setActivePaneId(next[0]?.id ?? 'pane-1')
     setXRange({ start: log.meta.tMin, end: log.meta.tMax })
     setAnalysisRange(null)
     setCursorTime(null)
@@ -77,20 +65,6 @@ export function LogViewer({ log, page, onPageChange }: Props) {
     ro.observe(el)
     return () => ro.disconnect()
   }, [page, panes.length])
-
-  const applyPreset = useCallback(
-    (id: string) => {
-      setPresetId(id)
-      const all = [...builtins, ...customs]
-      const hit = all.find((p) => p.id === id)
-      if (hit) {
-        const next = structuredClone(hit.panes)
-        setPanes(next)
-        setActivePaneId(next[0]?.id ?? 'pane-1')
-      }
-    },
-    [builtins, customs],
-  )
 
   const cursorIdx = cursorTime != null ? indexNearTime(displayLog.time, cursorTime) : null
 
@@ -151,15 +125,6 @@ export function LogViewer({ log, page, onPageChange }: Props) {
     downloadText(`${name}-export.csv`, csv)
   }
 
-  function saveLayout() {
-    const name = saveName.trim() || `Custom ${customs.length + 1}`
-    const id = `custom-${Date.now()}`
-    const next = saveCustomLayout({ id, name, panes: structuredClone(panes) })
-    setCustoms(next)
-    setPresetId(id)
-    setSaveName('')
-  }
-
   const pullLabel = analysisRange
     ? `Pull ${analysisRange.start.toFixed(2)}–${analysisRange.end.toFixed(2)}s`
     : 'Full log (no pull selected)'
@@ -199,54 +164,12 @@ export function LogViewer({ log, page, onPageChange }: Props) {
               </div>
             </div>
 
-            <div className="preset-bar">
-              <div className="panel-header">Layouts</div>
-              <div className="preset-buttons">
-                {[...builtins, ...customs].map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    className={presetId === p.id ? 'active' : ''}
-                    onClick={() => applyPreset(p.id)}
-                  >
-                    {p.name}
-                  </button>
-                ))}
-              </div>
-              <div className="save-layout">
-                <input
-                  placeholder="Save layout as…"
-                  value={saveName}
-                  onChange={(e) => setSaveName(e.target.value)}
-                />
-                <button type="button" onClick={saveLayout}>
-                  Save
-                </button>
-              </div>
-              {customs.map((c) => (
-                <button
-                  key={`del-${c.id}`}
-                  type="button"
-                  className="ghost danger"
-                  onClick={() => {
-                    setCustoms(deleteCustomLayout(c.id))
-                    if (presetId === c.id) applyPreset(builtins[0]?.id ?? 'boost')
-                  }}
-                >
-                  Delete “{c.name}”
-                </button>
-              ))}
-            </div>
-
             <ChannelPicker
               log={displayLog}
               panes={panes}
               activePaneId={activePaneId}
               onActivePaneId={setActivePaneId}
-              onChange={(next) => {
-                setPanes(next)
-                setPresetId('custom')
-              }}
+              onChange={setPanes}
             />
           </aside>
 
@@ -300,7 +223,7 @@ export function LogViewer({ log, page, onPageChange }: Props) {
             <div className="chart-stack">
               <div className="chart-stack-viewport" ref={chartStackRef}>
                 {panes.length === 0 && (
-                  <div className="empty-charts">Pick channels or a preset layout to plot.</div>
+                  <div className="empty-charts">Pick channels to plot.</div>
                 )}
                 {panes.map((pane) => (
                   <UPlotPane

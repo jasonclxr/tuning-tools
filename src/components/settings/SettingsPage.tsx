@@ -1,9 +1,21 @@
-import { DEFAULT_SETTINGS, type AppSettings } from '../../lib/settings'
+import {
+  DEFAULT_SETTINGS,
+  GASOLINE_LB_PER_GAL,
+  TANK_CAPACITY_GAL,
+  fuelWeightLb,
+  testWeightLb,
+  type AppSettings,
+} from '../../lib/settings'
 import { useSettings } from '../../context/SettingsContext'
 
 type UnitKey = Exclude<
   keyof AppSettings,
-  'stoichAfr' | 'vehicleWeightLb' | 'drivetrainLossPercent' | 'estimatePowerFromSpeed'
+  | 'stoichAfr'
+  | 'vehicleWeightLb'
+  | 'driverWeightLb'
+  | 'tankFillPercent'
+  | 'drivetrainLossPercent'
+  | 'estimatePowerFromSpeed'
 >
 
 interface UnitRow {
@@ -191,10 +203,50 @@ export function SettingsPage() {
               if (Number.isFinite(v) && v > 0) updateSettings({ vehicleWeightLb: v })
             }}
           />
+          <span className="settings-hint">Curb / vehicle only · default {DEFAULT_SETTINGS.vehicleWeightLb} lb</span>
+        </label>
+        <label className="settings-field">
+          <span>Driver weight (lb)</span>
+          <input
+            type="number"
+            min={0}
+            max={800}
+            step={1}
+            value={settings.driverWeightLb}
+            onChange={(e) => {
+              const v = Number(e.target.value)
+              if (Number.isFinite(v) && v >= 0) updateSettings({ driverWeightLb: v })
+            }}
+          />
+          <span className="settings-hint">Default {DEFAULT_SETTINGS.driverWeightLb} lb</span>
+        </label>
+        <label className="settings-field">
+          <span>Gas tank fill (%)</span>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step={1}
+            value={settings.tankFillPercent}
+            onChange={(e) => {
+              const v = Number(e.target.value)
+              if (Number.isFinite(v)) {
+                updateSettings({ tankFillPercent: Math.min(100, Math.max(0, v)) })
+              }
+            }}
+          />
           <span className="settings-hint">
-            Include driver/fuel as tested · default {DEFAULT_SETTINGS.vehicleWeightLb} lb
+            {TANK_CAPACITY_GAL} gal tank · {GASOLINE_LB_PER_GAL} lb/gal · fuel{' '}
+            {fuelWeightLb(settings).toFixed(1)} lb
           </span>
         </label>
+        <p className="settings-weight-total">
+          Test weight {Math.round(testWeightLb(settings)).toLocaleString()} lb
+          <span>
+            ({settings.vehicleWeightLb.toLocaleString()} + {settings.driverWeightLb.toLocaleString()}{' '}
+            + {fuelWeightLb(settings).toFixed(0)} fuel)
+          </span>
+        </p>
         <label className="settings-field">
           <span>Drivetrain loss (%)</span>
           <input

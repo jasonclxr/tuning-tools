@@ -61,14 +61,17 @@ export function addDerivedChannels(log: ParsedLog): void {
         continue
       }
       const mapPsi = toPsi(map, mapCh.unit, mapFallback)
+      let boostPsi: number
       if (baroCh) {
         const baro = baroCh.data[i]
-        data[i] = Number.isFinite(baro)
+        boostPsi = Number.isFinite(baro)
           ? mapPsi - toPsi(baro, baroCh.unit, baroFallback)
           : Number.NaN
       } else {
-        data[i] = mapPsi - (Number.isFinite(inferredBaroPsi) ? inferredBaroPsi : stdBaroPsi)
+        boostPsi = mapPsi - (Number.isFinite(inferredBaroPsi) ? inferredBaroPsi : stdBaroPsi)
       }
+      // Gauge-style boost: only plot pressure above atmosphere.
+      data[i] = Number.isFinite(boostPsi) && boostPsi > 0 ? boostPsi : Number.NaN
     }
     const derived: ParsedChannel = {
       id: '__derived_boost_psi',

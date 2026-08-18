@@ -22,13 +22,22 @@ export interface AppSettings {
   fuelVolumeUnit: FuelVolumeUnit
   /** Stoich AFR used for λ ↔ AFR conversions (gasoline default 14.7). */
   stoichAfr: number
-  /** Curb/test weight used for VSS-based wheel HP estimate (always stored as lb). */
+  /** Curb / vehicle-only weight (lb), excluding driver and fuel. */
   vehicleWeightLb: number
+  /** Driver weight (lb). */
+  driverWeightLb: number
+  /** Fuel tank fill 0–100%. Tank is 11 gal gasoline. */
+  tankFillPercent: number
   /** Drivetrain loss percent for crank HP estimate from wheel HP (0–50). */
   drivetrainLossPercent: number
   /** When true, estimate wheel/crank HP from vehicle speed + weight. */
   estimatePowerFromSpeed: boolean
 }
+
+/** 11 gal tank used for fuel mass. */
+export const TANK_CAPACITY_GAL = 11
+/** Gasoline density used for tank-fill weight (lb / US gal). */
+export const GASOLINE_LB_PER_GAL = 6.3
 
 export const DEFAULT_SETTINGS: AppSettings = {
   pressureUnit: 'psi',
@@ -42,9 +51,25 @@ export const DEFAULT_SETTINGS: AppSettings = {
   massUnit: 'g',
   fuelVolumeUnit: 'cc',
   stoichAfr: 14.7,
-  vehicleWeightLb: 3200,
+  vehicleWeightLb: 2200,
+  driverWeightLb: 230,
+  tankFillPercent: 50,
   drivetrainLossPercent: 15,
   estimatePowerFromSpeed: true,
+}
+
+function isPositiveNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
+}
+
+export function fuelWeightLb(settings: Pick<AppSettings, 'tankFillPercent'>): number {
+  const fill = Math.min(100, Math.max(0, settings.tankFillPercent)) / 100
+  return TANK_CAPACITY_GAL * GASOLINE_LB_PER_GAL * fill
+}
+
+/** Combined as-tested weight for VSS power estimates. */
+export function testWeightLb(settings: AppSettings): number {
+  return Math.max(0, settings.vehicleWeightLb) + Math.max(0, settings.driverWeightLb) + fuelWeightLb(settings)
 }
 
 const STORAGE_KEY = 'versa-log-viewer:settings'
@@ -54,6 +79,8 @@ export function loadSettings(): AppSettings {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return { ...DEFAULT_SETTINGS }
     const parsed = JSON.parse(raw) as Partial<AppSettings>
+    const hasSplitWeight =
+      typeof parsed.driverWeightLb === 'number' || typeof parsed.tankFillPercent === 'number'
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,
@@ -62,11 +89,19 @@ export function loadSettings(): AppSettings {
           ? parsed.stoichAfr
           : DEFAULT_SETTINGS.stoichAfr,
       vehicleWeightLb:
-        typeof parsed.vehicleWeightLb === 'number' &&
-        Number.isFinite(parsed.vehicleWeightLb) &&
-        parsed.vehicleWeightLb > 0
+        hasSplitWeight && isPositiveNumber(parsed.vehicleWeightLb)
           ? parsed.vehicleWeightLb
           : DEFAULT_SETTINGS.vehicleWeightLb,
+      driverWeightLb:
+        typeof parsed.driverWeightLb === 'number' &&
+        Number.isFinite(parsed.driverWeightLb) &&
+        parsed.driverWeightLb >= 0
+          ? parsed.driverWeightLb
+          : DEFAULT_SETTINGS.driverWeightLb,
+      tankFillPercent:
+        typeof parsed.tankFillPercent === 'number' && Number.isFinite(parsed.tankFillPercent)
+          ? Math.min(100, Math.max(0, parsed.tankFillPercent))
+          : DEFAULT_SETTINGS.tankFillPercent,
       drivetrainLossPercent:
         typeof parsed.drivetrainLossPercent === 'number' &&
         Number.isFinite(parsed.drivetrainLossPercent)

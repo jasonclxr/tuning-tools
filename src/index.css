@@ -29,8 +29,8 @@ html,
 body,
 #root {
   margin: 0;
-  min-height: 100%;
   height: 100%;
+  overflow: hidden;
 }
 
 body {
@@ -82,9 +82,11 @@ select {
 }
 
 .app {
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .app-header {
@@ -212,10 +214,13 @@ select {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: auto;
 }
 
 .app-header.has-log + .app-main {
   padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  overflow: hidden;
 }
 
 .welcome {
@@ -375,7 +380,6 @@ select {
 }
 
 .meta-card,
-.preset-bar,
 .channel-picker,
 .mapping-report {
   background: var(--bg-panel);
@@ -411,24 +415,6 @@ select {
   letter-spacing: 0.06em;
   color: var(--muted);
   margin-bottom: 0.5rem;
-}
-
-.preset-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-bottom: 0.5rem;
-}
-
-.save-layout {
-  display: flex;
-  gap: 0.35rem;
-  margin-bottom: 0.35rem;
-}
-
-.save-layout input {
-  flex: 1;
-  min-width: 0;
 }
 
 .channel-picker {
@@ -495,6 +481,7 @@ select {
   flex-wrap: wrap;
   gap: 0.4rem;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .toolbar-hint {
@@ -513,15 +500,17 @@ select {
   border: 1px solid var(--border-soft);
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
+  flex-shrink: 0;
 }
 
 .uplot-pane-wrap {
   width: 100%;
-  flex-shrink: 0;
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
   min-height: 0;
+  overflow: hidden;
 }
 
 .uplot-pane {
@@ -770,6 +759,17 @@ select {
   font-size: 0.75rem;
 }
 
+.settings-weight-total {
+  margin: 0.15rem 0 0.35rem;
+  font-size: 0.9rem;
+}
+
+.settings-weight-total span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-left: 0.4rem;
+}
+
 .settings-card-note {
   margin: 0;
   color: var(--muted);
@@ -880,11 +880,7 @@ code {
 @media (max-width: 960px) {
   .viewer-body {
     grid-template-columns: 1fr;
-  }
-
-  .viewer {
-    height: auto;
-    min-height: 0;
+    overflow: auto;
   }
 
   .map-edge-editors {

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useSettings } from '../../context/SettingsContext'
 import { computePowerStats, type PowerPeak } from '../../lib/powerTorque'
+import { testWeightLb } from '../../lib/settings'
 import { powerUnitLabel, torqueUnitLabel } from '../../lib/units'
 import type { ParsedLog, TimeRange } from '../../lib/types'
 
@@ -44,8 +45,8 @@ export function PowerPanel({ log, range }: Props) {
 
       {settings.estimatePowerFromSpeed && hasSpeed && !hasEstChannels && (
         <p className="muted">
-          Set a vehicle weight in Settings (currently {settings.vehicleWeightLb} lb) to generate
-          wheel/crank HP channels.
+          Set vehicle, driver, and tank fill in Settings (test weight {Math.round(testWeightLb(settings))} lb)
+          to generate wheel/crank HP channels.
         </p>
       )}
 
@@ -59,7 +60,8 @@ export function PowerPanel({ log, range }: Props) {
             {settings.estimatePowerFromSpeed && hasEstChannels && (
               <>
                 {' '}
-                · weight {settings.vehicleWeightLb} lb · loss {settings.drivetrainLossPercent}%
+                · test weight {Math.round(testWeightLb(settings))} lb · loss{' '}
+                {settings.drivetrainLossPercent}%
               </>
             )}
           </div>
@@ -82,8 +84,8 @@ export function PowerPanel({ log, range }: Props) {
             </div>
           </div>
           <p className="power-footnote">
-            Estimate ignores aero, grade, and tire slip. Use the Power chart layout or Map table
-            (cell = Wheel/Crank HP) over a selected pull for detail.
+            Estimate ignores aero, grade, and tire slip. Plot Wheel/Crank HP on Charts or use the
+            Map table over a selected pull for detail.
           </p>
         </>
       )}
