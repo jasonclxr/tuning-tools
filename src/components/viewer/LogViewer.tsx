@@ -17,13 +17,15 @@ import { ChannelPicker } from './ChannelPicker'
 import { MapTablePanel } from './MapTablePanel'
 import { PowerPanel } from './PowerPanel'
 
-type ViewerPage = 'charts' | 'map' | 'power'
+export type ViewerPage = 'charts' | 'map' | 'power'
 
 interface Props {
   log: ParsedLog
+  page: ViewerPage
+  onPageChange: (page: ViewerPage) => void
 }
 
-export function LogViewer({ log }: Props) {
+export function LogViewer({ log, page, onPageChange }: Props) {
   const { settings } = useSettings()
   const displayLog = useMemo(() => {
     const withPower = addPowerTorqueChannels(log, settings)
@@ -44,7 +46,6 @@ export function LogViewer({ log }: Props) {
   const [cursorTime, setCursorTime] = useState<number | null>(null)
   const [selectMode, setSelectMode] = useState(false)
   const [saveName, setSaveName] = useState('')
-  const [page, setPage] = useState<ViewerPage>('charts')
   const chartStackRef = useRef<HTMLDivElement>(null)
   const [paneHeight, setPaneHeight] = useState(280)
 
@@ -56,7 +57,6 @@ export function LogViewer({ log }: Props) {
     setXRange({ start: log.meta.tMin, end: log.meta.tMax })
     setAnalysisRange(null)
     setCursorTime(null)
-    setPage('charts')
     // Reset viewer state only when a new source log is loaded
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [log])
@@ -166,42 +166,19 @@ export function LogViewer({ log }: Props) {
 
   return (
     <div className={`viewer viewer-page-${page}`}>
-      <div className="viewer-page-nav">
-        <button
-          type="button"
-          className={page === 'charts' ? 'active' : ''}
-          onClick={() => setPage('charts')}
-        >
-          Charts
-        </button>
-        <button
-          type="button"
-          className={page === 'map' ? 'active' : ''}
-          onClick={() => setPage('map')}
-        >
-          Map table
-        </button>
-        <button
-          type="button"
-          className={page === 'power' ? 'active' : ''}
-          onClick={() => setPage('power')}
-        >
-          Power
-        </button>
-        <div className="viewer-page-pull">
+      {page !== 'charts' && (
+        <div className="viewer-context">
           <span>{pullLabel}</span>
           {analysisRange && (
             <button type="button" className="ghost" onClick={() => setAnalysisRange(null)}>
               Clear pull
             </button>
           )}
-          {page !== 'charts' && (
-            <button type="button" className="ghost" onClick={() => setPage('charts')}>
-              Select pull on Charts
-            </button>
-          )}
+          <button type="button" className="ghost" onClick={() => onPageChange('charts')}>
+            Select pull on Charts
+          </button>
         </div>
-      </div>
+      )}
 
       {page === 'charts' && (
         <div className="viewer-body">
@@ -290,9 +267,14 @@ export function LogViewer({ log }: Props) {
                 {selectMode ? 'Selecting pull…' : 'Select pull'}
               </button>
               {analysisRange && (
-                <button type="button" onClick={() => setXRange({ ...analysisRange })}>
-                  Fit to pull
-                </button>
+                <>
+                  <button type="button" onClick={() => setXRange({ ...analysisRange })}>
+                    Fit to pull
+                  </button>
+                  <button type="button" className="ghost" onClick={() => setAnalysisRange(null)}>
+                    Clear pull
+                  </button>
+                </>
               )}
               <button type="button" onClick={exportVisible}>
                 Export CSV

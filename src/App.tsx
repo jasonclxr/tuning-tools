@@ -2,14 +2,16 @@ import { useState } from 'react'
 import { DropZone } from './components/DropZone'
 import { ConverterTool } from './components/converter/ConverterTool'
 import { SettingsPage } from './components/settings/SettingsPage'
-import { LogViewer } from './components/viewer/LogViewer'
+import { LogViewer, type ViewerPage } from './components/viewer/LogViewer'
+import { logSourceLabel } from './lib/logFormat'
 import { parseVersaCsvFile, parseVersaCsvText } from './lib/parseVersaCsv'
 import type { ParsedLog } from './lib/types'
 
-type Tab = 'viewer' | 'converter' | 'settings'
+type AppTab = 'viewer' | 'converter' | 'settings'
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>('viewer')
+  const [tab, setTab] = useState<AppTab>('viewer')
+  const [viewerPage, setViewerPage] = useState<ViewerPage>('charts')
   const [log, setLog] = useState<ParsedLog | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -20,6 +22,7 @@ export default function App() {
     try {
       const parsed = await parseVersaCsvFile(file)
       setLog(parsed)
+      setViewerPage('charts')
       setTab('viewer')
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -37,6 +40,7 @@ export default function App() {
       if (!res.ok) throw new Error(`Failed to load sample (${res.status})`)
       const text = await res.text()
       setLog(parseVersaCsvText(text, name))
+      setViewerPage('charts')
       setTab('viewer')
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -45,9 +49,21 @@ export default function App() {
     }
   }
 
+  function goViewer(page: ViewerPage) {
+    setViewerPage(page)
+    setTab('viewer')
+  }
+
+  function closeLog() {
+    setLog(null)
+    setError(null)
+    setViewerPage('charts')
+    setTab('viewer')
+  }
+
   return (
     <div className="app">
-      <header className="app-header">
+      <header className={`app-header ${log ? 'has-log' : ''}`}>
         <div className="brand">
           <span className="brand-mark">VT</span>
           <div>
@@ -55,29 +71,93 @@ export default function App() {
             <div className="brand-sub">Local-first datalog toolkit</div>
           </div>
         </div>
-        <nav className="tabs">
-          <button
-            type="button"
-            className={tab === 'viewer' ? 'active' : ''}
-            onClick={() => setTab('viewer')}
-          >
-            Log Viewer
-          </button>
-          <button
-            type="button"
-            className={tab === 'converter' ? 'active' : ''}
-            onClick={() => setTab('converter')}
-          >
-            HPTuners Converter
-          </button>
-          <button
-            type="button"
-            className={tab === 'settings' ? 'active' : ''}
-            onClick={() => setTab('settings')}
-          >
-            Settings
-          </button>
+
+        <nav className="header-nav" aria-label="Primary">
+          {log ? (
+            <div className="nav-group" role="tablist" aria-label="Log views">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={tab === 'viewer' && viewerPage === 'charts'}
+                className={tab === 'viewer' && viewerPage === 'charts' ? 'active' : ''}
+                onClick={() => goViewer('charts')}
+              >
+                Charts
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={tab === 'viewer' && viewerPage === 'map'}
+                className={tab === 'viewer' && viewerPage === 'map' ? 'active' : ''}
+                onClick={() => goViewer('map')}
+              >
+                Map table
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={tab === 'viewer' && viewerPage === 'power'}
+                className={tab === 'viewer' && viewerPage === 'power' ? 'active' : ''}
+                onClick={() => goViewer('power')}
+              >
+                Power
+              </button>
+            </div>
+          ) : (
+            <div className="nav-group">
+              <button
+                type="button"
+                className={tab === 'viewer' ? 'active' : ''}
+                onClick={() => setTab('viewer')}
+              >
+                Log Viewer
+              </button>
+            </div>
+          )}
+          <div className="nav-group">
+            <button
+              type="button"
+              className={tab === 'converter' ? 'active' : ''}
+              onClick={() => setTab('converter')}
+            >
+              Converter
+            </button>
+            <button
+              type="button"
+              className={tab === 'settings' ? 'active' : ''}
+              onClick={() => setTab('settings')}
+            >
+              Settings
+            </button>
+          </div>
         </nav>
+
+        {log && (
+          <div className="header-log">
+            <div className="header-log-meta">
+              <span className="header-log-name" title={log.meta.filename}>
+                {log.meta.filename}
+              </span>
+              <span className="header-log-source">{logSourceLabel(log.meta.source)}</span>
+            </div>
+            <label className="file-button">
+              Replace
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                hidden
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) void loadFile(f)
+                  e.target.value = ''
+                }}
+              />
+            </label>
+            <button type="button" className="ghost" onClick={closeLog}>
+              Close
+            </button>
+          </div>
+        )}
       </header>
 
       <main className="app-main">
@@ -125,26 +205,8 @@ export default function App() {
               </div>
             ) : (
               <div className="viewer-shell">
-                <div className="viewer-topbar">
-                  <button type="button" className="ghost" onClick={() => setLog(null)}>
-                    ← Open another log
-                  </button>
-                  <label className="file-button">
-                    Replace log…
-                    <input
-                      type="file"
-                      accept=".csv,text/csv"
-                      hidden
-                      onChange={(e) => {
-                        const f = e.target.files?.[0]
-                        if (f) void loadFile(f)
-                        e.target.value = ''
-                      }}
-                    />
-                  </label>
-                </div>
                 {error && <div className="error-banner">{error}</div>}
-                <LogViewer log={log} />
+                <LogViewer log={log} page={viewerPage} onPageChange={goViewer} />
               </div>
             )}
           </>
