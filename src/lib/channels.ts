@@ -281,5 +281,17 @@ export const SERIES_COLORS = [
 ]
 
 export function colorForIndex(index: number): string {
-  return SERIES_COLORS[index % SERIES_COLORS.length]
+  if (index < SERIES_COLORS.length) return SERIES_COLORS[index]
+  const hue = (index * 137.508) % 360
+  return `hsl(${hue.toFixed(1)} 72% 62%)`
+}
+
+/** First palette/generated color not already used by plotted series. */
+export function unusedSeriesColor(used: Iterable<string>): string {
+  const taken = new Set([...used].map((c) => c.toLowerCase()))
+  for (let i = 0; i < SERIES_COLORS.length + 64; i++) {
+    const color = colorForIndex(i)
+    if (!taken.has(color.toLowerCase())) return color
+  }
+  return colorForIndex(taken.size)
 }

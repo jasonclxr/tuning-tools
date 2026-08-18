@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { groupChannels } from '../../lib/channelGroups'
-import { colorForIndex } from '../../lib/channels'
+import { unusedSeriesColor } from '../../lib/channels'
 import { channelLabel } from '../../lib/presets'
 import type { ChartPane, ParsedLog } from '../../lib/types'
 
@@ -21,10 +21,10 @@ export function ChannelPicker({
 }: Props) {
   const [query, setQuery] = useState('')
   const active = useMemo(() => {
-    const map = new Map<string, { color: string; visible: boolean; paneId: string }>()
+    const map = new Map<string, { color: string; paneId: string }>()
     for (const pane of panes) {
       for (const s of pane.series) {
-        map.set(s.channelId, { color: s.color, visible: s.visible, paneId: pane.id })
+        map.set(s.channelId, { color: s.color, paneId: pane.id })
       }
     }
     return map
@@ -63,7 +63,8 @@ export function ChannelPicker({
       return
     }
 
-    const color = colorForIndex(Array.from(active.keys()).length)
+    const used = panes.flatMap((p) => p.series.map((s) => s.color))
+    const color = unusedSeriesColor(used)
     let next: ChartPane[]
     if (panes.length === 0) {
       next = [{ id: 'pane-1', series: [{ channelId, color, visible: true }] }]
@@ -80,43 +81,10 @@ export function ChannelPicker({
     onChange(next)
   }
 
-  function moveToPane(channelId: string, paneId: string) {
-    const state = active.get(channelId)
-    if (!state) return
-    const series = { channelId, color: state.color, visible: state.visible }
-    const stripped = panes.map((p) => ({
-      ...p,
-      series: p.series.filter((s) => s.channelId !== channelId),
-    }))
-    const next = stripped
-      .map((p) => (p.id === paneId ? { ...p, series: [...p.series, series] } : p))
-      .filter((p) => p.series.length > 0 || p.id === paneId)
-    onChange(next)
-    onActivePaneId(paneId)
-  }
-
   function addPane() {
     const id = `pane-${Date.now()}`
     onChange([...panes, { id, series: [] }])
     onActivePaneId(id)
-  }
-
-  function setVisibility(channelId: string, visible: boolean) {
-    onChange(
-      panes.map((p) => ({
-        ...p,
-        series: p.series.map((s) => (s.channelId === channelId ? { ...s, visible } : s)),
-      })),
-    )
-  }
-
-  function setColor(channelId: string, color: string) {
-    onChange(
-      panes.map((p) => ({
-        ...p,
-        series: p.series.map((s) => (s.channelId === channelId ? { ...s, color } : s)),
-      })),
-    )
   }
 
   const paneOptions = panes.length > 0 ? panes : [{ id: 'pane-1', series: [] }]
@@ -164,39 +132,13 @@ export function ChannelPicker({
                       checked={Boolean(state)}
                       onChange={() => toggle(ch.id)}
                     />
+                    {state && (
+                      <span className="channel-swatch" style={{ background: state.color }} />
+                    )}
                     <span className="channel-name" title={ch.id}>
                       {channelLabel(ch)}
                     </span>
                   </label>
-                  {state && (
-                    <div className="channel-controls">
-                      <input
-                        type="color"
-                        value={state.color}
-                        onChange={(e) => setColor(ch.id, e.target.value)}
-                        title="Series color"
-                      />
-                      <select
-                        className="pane-move"
-                        value={state.paneId}
-                        onChange={(e) => moveToPane(ch.id, e.target.value)}
-                        title="Move to chart"
-                      >
-                        {paneOptions.map((p, i) => (
-                          <option key={p.id} value={p.id}>
-                            Chart {i + 1}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        className="ghost"
-                        onClick={() => setVisibility(ch.id, !state.visible)}
-                      >
-                        {state.visible ? 'Hide' : 'Show'}
-                      </button>
-                    </div>
-                  )}
                 </div>
               )
             })}
