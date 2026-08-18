@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { groupChannels } from '../../lib/channelGroups'
 import { colorForIndex } from '../../lib/channels'
 import { channelLabel } from '../../lib/presets'
 import type { ChartPane, ParsedLog } from '../../lib/types'
@@ -29,18 +30,17 @@ export function ChannelPicker({
     return map
   }, [panes])
 
-  const filtered = useMemo(() => {
+  const groups = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return log.channels
-      .filter((c) => {
-        if (!q) return true
-        return (
-          c.name.toLowerCase().includes(q) ||
-          c.id.toLowerCase().includes(q) ||
-          (c.unit?.toLowerCase().includes(q) ?? false)
-        )
-      })
-      .sort((a, b) => a.name.localeCompare(b.name))
+    const matches = log.channels.filter((c) => {
+      if (!q) return true
+      return (
+        c.name.toLowerCase().includes(q) ||
+        c.id.toLowerCase().includes(q) ||
+        (c.unit?.toLowerCase().includes(q) ?? false)
+      )
+    })
+    return groupChannels(matches)
   }, [log.channels, query])
 
   function ensureActivePane(nextPanes: ChartPane[]): string {
@@ -151,52 +151,57 @@ export function ChannelPicker({
         onChange={(e) => setQuery(e.target.value)}
       />
       <div className="channel-list">
-        {filtered.map((ch) => {
-          const state = active.get(ch.id)
-          return (
-            <div key={ch.id} className={`channel-row ${state ? 'active' : ''}`}>
-              <label className="channel-check">
-                <input
-                  type="checkbox"
-                  checked={Boolean(state)}
-                  onChange={() => toggle(ch.id)}
-                />
-                <span className="channel-name" title={ch.id}>
-                  {channelLabel(ch)}
-                </span>
-              </label>
-              {state && (
-                <div className="channel-controls">
-                  <input
-                    type="color"
-                    value={state.color}
-                    onChange={(e) => setColor(ch.id, e.target.value)}
-                    title="Series color"
-                  />
-                  <select
-                    className="pane-move"
-                    value={state.paneId}
-                    onChange={(e) => moveToPane(ch.id, e.target.value)}
-                    title="Move to chart"
-                  >
-                    {paneOptions.map((p, i) => (
-                      <option key={p.id} value={p.id}>
-                        Chart {i + 1}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className="ghost"
-                    onClick={() => setVisibility(ch.id, !state.visible)}
-                  >
-                    {state.visible ? 'Hide' : 'Show'}
-                  </button>
+        {groups.map((group) => (
+          <div key={group.id} className="channel-group">
+            <div className="channel-group-label">{group.label}</div>
+            {group.channels.map((ch) => {
+              const state = active.get(ch.id)
+              return (
+                <div key={ch.id} className={`channel-row ${state ? 'active' : ''}`}>
+                  <label className="channel-check">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(state)}
+                      onChange={() => toggle(ch.id)}
+                    />
+                    <span className="channel-name" title={ch.id}>
+                      {channelLabel(ch)}
+                    </span>
+                  </label>
+                  {state && (
+                    <div className="channel-controls">
+                      <input
+                        type="color"
+                        value={state.color}
+                        onChange={(e) => setColor(ch.id, e.target.value)}
+                        title="Series color"
+                      />
+                      <select
+                        className="pane-move"
+                        value={state.paneId}
+                        onChange={(e) => moveToPane(ch.id, e.target.value)}
+                        title="Move to chart"
+                      >
+                        {paneOptions.map((p, i) => (
+                          <option key={p.id} value={p.id}>
+                            Chart {i + 1}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        className="ghost"
+                        onClick={() => setVisibility(ch.id, !state.visible)}
+                      >
+                        {state.visible ? 'Hide' : 'Show'}
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          )
-        })}
+              )
+            })}
+          </div>
+        ))}
       </div>
     </div>
   )

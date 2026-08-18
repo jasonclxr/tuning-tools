@@ -11,7 +11,8 @@ import {
   suggestAxisChannels,
   type MapAgg,
 } from '../../lib/mapTable'
-import type { ParsedLog, TimeRange } from '../../lib/types'
+import { groupChannels, type ChannelGroup } from '../../lib/channelGroups'
+import type { ParsedChannel, ParsedLog, TimeRange } from '../../lib/types'
 
 interface Props {
   log: ParsedLog
@@ -69,6 +70,7 @@ export function MapTablePanel({ log, range }: Props) {
     [log, xChannelId, yChannelId, zChannelId, xEdges, yEdges, agg, range],
   )
 
+  const channelGroups = useMemo(() => groupChannels(log.channels), [log.channels])
   const zCh = log.channels.find((c) => c.id === zChannelId)
   const colorMode =
     zCh?.id.includes('error') ||
@@ -94,34 +96,19 @@ export function MapTablePanel({ log, range }: Props) {
         <label>
           X (columns)
           <select value={xChannelId} onChange={(e) => setXChannelId(e.target.value)}>
-            {log.channels.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-                {c.unit ? ` (${c.unit})` : ''}
-              </option>
-            ))}
+            <ChannelOptions groups={channelGroups} />
           </select>
         </label>
         <label>
           Y (rows)
           <select value={yChannelId} onChange={(e) => setYChannelId(e.target.value)}>
-            {log.channels.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-                {c.unit ? ` (${c.unit})` : ''}
-              </option>
-            ))}
+            <ChannelOptions groups={channelGroups} />
           </select>
         </label>
         <label>
           Cell value
           <select value={zChannelId} onChange={(e) => setZChannelId(e.target.value)}>
-            {log.channels.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-                {c.unit ? ` (${c.unit})` : ''}
-              </option>
-            ))}
+            <ChannelOptions groups={channelGroups} />
           </select>
         </label>
         <label>
@@ -222,5 +209,22 @@ export function MapTablePanel({ log, range }: Props) {
         </div>
       )}
     </div>
+  )
+}
+
+function ChannelOptions({ groups }: { groups: ChannelGroup<ParsedChannel>[] }) {
+  return (
+    <>
+      {groups.map((group) => (
+        <optgroup key={group.id} label={group.label}>
+          {group.channels.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+              {c.unit ? ` (${c.unit})` : ''}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+    </>
   )
 }
