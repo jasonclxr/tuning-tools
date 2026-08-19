@@ -35,20 +35,53 @@ function scaleLabel(ch: ParsedChannel | undefined, channelId: string): string {
   return ch.name
 }
 
-function paddedRange(
-  _u: uPlot,
-  dataMin: number | null,
-  dataMax: number | null,
-): [number, number] {
-  if (dataMin == null || dataMax == null || !Number.isFinite(dataMin) || !Number.isFinite(dataMax)) {
-    return [0, 1]
+function finiteMinMax(data: Float64Array): { min: number; max: number } | null {
+  let min = Infinity
+  let max = -Infinity
+  for (let i = 0; i < data.length; i++) {
+    const v = data[i]
+    if (!Number.isFinite(v)) continue
+    if (v < min) min = v
+    if (v > max) max = v
   }
-  if (dataMin === dataMax) {
-    const pad = Math.max(Math.abs(dataMin) * 0.05, 1)
-    return [dataMin - pad, dataMax + pad]
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return null
+  return { min, max }
+}
+
+function paddedExtents(min: number, max: number): [number, number] {
+  if (min === max) {
+    const pad = Math.max(Math.abs(min) * 0.05, 1)
+    return [min - pad, max + pad]
   }
-  const pad = (dataMax - dataMin) * 0.08
-  return [dataMin - pad, dataMax + pad]
+  const pad = (max - min) * 0.08
+  return [min - pad, max + pad]
+}
+
+/** Y range from the full series, not the current time window — zoom/pan must not rescale. */
+function yRangesForScales(
+  log: ParsedLog,
+  visibleSeries: ChartPane['series'],
+  seriesScale: string[],
+  scaleOrder: string[],
+): Map<string, [number, number]> {
+  const raw = new Map<string, { min: number; max: number }>()
+  for (let i = 0; i < visibleSeries.length; i++) {
+    const ch = log.channels.find((c) => c.id === visibleSeries[i].channelId)
+    if (!ch) continue
+    const ext = finiteMinMax(ch.data)
+    if (!ext) continue
+    const key = seriesScale[i]
+    const prev = raw.get(key)
+    if (!prev) raw.set(key, ext)
+    else raw.set(key, { min: Math.min(prev.min, ext.min), max: Math.max(prev.max, ext.max) })
+  }
+
+  const ranges = new Map<string, [number, number]>()
+  for (const key of scaleOrder) {
+    const ext = raw.get(key)
+    ranges.set(key, ext ? paddedExtents(ext.min, ext.max) : [0, 1])
+  }
+  return ranges
 }
 
 const AXIS_COLORS = ['#8b949e', '#58a6ff', '#3fb950', '#d29922', '#f85149', '#a371f7']
@@ -90,6 +123,11 @@ export function UPlotPane({
     return { order, labels, seriesScale }
   }, [log.channels, visibleSeries])
 
+  const yRanges = useMemo(
+    () => yRangesForScales(log, visibleSeries, scalePlan.seriesScale, scalePlan.order),
+    [log, visibleSeries, scalePlan],
+  )
+
   useEffect(() => {
     if (!rootRef.current) return
 
@@ -110,7 +148,11 @@ export function UPlotPane({
       x: { time: false, min: xRange.start, max: xRange.end },
     }
     for (const key of scalePlan.order) {
-      scales[key] = { auto: true, range: paddedRange }
+      const yRange = yRanges.get(key) ?? [0, 1]
+      scales[key] = {
+        auto: false,
+        range: () => yRange,
+      }
     }
 
     // X axis + up to two labeled Y axes (left/right). Extra unit groups still auto-scale independently.
@@ -390,7 +432,11 @@ export function UPlotPane({
     const data = buildData(log, visibleSeries, xRange)
     plot.setData(data, false)
     plot.setScale('x', { min: xRange.start, max: xRange.end })
-  }, [log, visibleSeries, xRange])
+    for (const key of scalePlan.order) {
+      const yRange = yRanges.get(key)
+      if (yRange) plot.setScale(key, { min: yRange[0], max: yRange[1] })
+    }
+  }, [log, visibleSeries, xRange, scalePlan, yRanges])
 
   useEffect(() => {
     const plot = plotRef.current
