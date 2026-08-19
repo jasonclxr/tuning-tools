@@ -5,6 +5,7 @@ import { downloadText, exportLogRangeCsv } from '../../lib/exportCsv'
 import { logSourceLabel } from '../../lib/logFormat'
 import { defaultChartPanes } from '../../lib/presets'
 import { adaptLogForDisplay } from '../../lib/units'
+import { addGearChannel, formatGear, isGearChannel } from '../../lib/gear'
 import { addPowerTorqueChannels } from '../../lib/powerTorque'
 import type { ChartPane, ParsedLog, TimeRange } from '../../lib/types'
 import { UPlotPane } from '../charts/UPlotPane'
@@ -24,7 +25,7 @@ export function LogViewer({ log, page, onPageChange }: Props) {
   const { settings } = useSettings()
   const displayLog = useMemo(() => {
     const withPower = addPowerTorqueChannels(log, settings)
-    return adaptLogForDisplay(withPower, settings)
+    return adaptLogForDisplay(addGearChannel(withPower, settings), settings)
   }, [log, settings])
   const [panes, setPanes] = useState<ChartPane[]>(() => defaultChartPanes(displayLog))
   const [activePaneId, setActivePaneId] = useState('pane-1')
@@ -80,6 +81,7 @@ export function LogViewer({ log, page, onPageChange }: Props) {
         unit: ch?.unit,
         color: panes.flatMap((p) => p.series).find((s) => s.channelId === id)?.color,
         value: v != null && Number.isFinite(v) ? v : null,
+        gear: isGearChannel(ch),
       }
     })
   }, [cursorIdx, panes, displayLog.channels])
@@ -214,8 +216,9 @@ export function LogViewer({ log, page, onPageChange }: Props) {
               </strong>
               {readout.map((r) => (
                 <span key={r.id} style={{ color: r.color }}>
-                  {r.label}: {r.value != null ? r.value.toFixed(3) : '—'}
-                  {r.unit ? ` ${r.unit}` : ''}
+                  {r.label}:{' '}
+                  {r.value != null ? (r.gear ? formatGear(r.value) : r.value.toFixed(3)) : '—'}
+                  {r.unit && !r.gear ? ` ${r.unit}` : ''}
                 </span>
               ))}
             </div>

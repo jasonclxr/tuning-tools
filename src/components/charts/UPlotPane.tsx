@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import uPlot from 'uplot'
 import 'uplot/dist/uPlot.min.css'
 import { downsampleAligned } from '../../lib/downsample'
+import { formatGear, isGearChannel } from '../../lib/gear'
 import type { ChartPane, ParsedChannel, ParsedLog, TimeRange } from '../../lib/types'
 
 interface Props {
@@ -30,6 +31,7 @@ function sanitize(s: string): string {
 
 function scaleLabel(ch: ParsedChannel | undefined, channelId: string): string {
   if (!ch) return channelId
+  if (ch.role === 'gear') return 'Gear'
   if (ch.unit?.trim()) return ch.unit.trim()
   if (ch.role) return ch.role
   return ch.name
@@ -78,6 +80,14 @@ function yRangesForScales(
 
   const ranges = new Map<string, [number, number]>()
   for (const key of scaleOrder) {
+    const gearOnScale = visibleSeries.some((s, i) => {
+      if (seriesScale[i] !== key) return false
+      return isGearChannel(log.channels.find((c) => c.id === s.channelId))
+    })
+    if (gearOnScale) {
+      ranges.set(key, [-1.35, 6.35])
+      continue
+    }
     const ext = raw.get(key)
     ranges.set(key, ext ? paddedExtents(ext.min, ext.max) : [0, 1])
   }
@@ -110,17 +120,19 @@ export function UPlotPane({
     const order: string[] = []
     const labels = new Map<string, string>()
     const seriesScale: string[] = []
+    const gearScales = new Set<string>()
 
     for (const s of visibleSeries) {
       const ch = log.channels.find((c) => c.id === s.channelId)
       const key = scaleKeyForChannel(ch, s.channelId)
       seriesScale.push(key)
+      if (isGearChannel(ch)) gearScales.add(key)
       if (!labels.has(key)) {
         order.push(key)
         labels.set(key, scaleLabel(ch, s.channelId))
       }
     }
-    return { order, labels, seriesScale }
+    return { order, labels, seriesScale, gearScales }
   }, [log.channels, visibleSeries])
 
   const yRanges = useMemo(
@@ -135,13 +147,19 @@ export function UPlotPane({
     for (let i = 0; i < visibleSeries.length; i++) {
       const s = visibleSeries[i]
       const ch = log.channels.find((c) => c.id === s.channelId)
-      series.push({
+      const seriesOpts: uPlot.Series = {
         label: ch ? `${ch.name}${ch.unit ? ` (${ch.unit})` : ''}` : s.channelId,
         stroke: s.color,
-        width: 1.5,
+        width: isGearChannel(ch) ? 2 : 1.5,
         points: { show: false },
         scale: scalePlan.seriesScale[i],
-      })
+      }
+      if (isGearChannel(ch)) {
+        const stepped = (uPlot.paths as { stepped?: (opts: { align?: number }) => uPlot.Series['paths'] })
+          .stepped
+        if (stepped) seriesOpts.paths = stepped({ align: 1 })
+      }
+      series.push(seriesOpts)
     }
 
     const scales: uPlot.Scales = {
@@ -168,6 +186,7 @@ export function UPlotPane({
     scalePlan.order.forEach((key, i) => {
       const side: 1 | 3 = i % 2 === 0 ? 3 : 1
       const showSpine = i < 4
+      const isGear = scalePlan.gearScales.has(key)
       axes.push({
         scale: key,
         side,
@@ -180,15 +199,22 @@ export function UPlotPane({
         label: scalePlan.labels.get(key) ?? key,
         labelSize: 11,
         labelFont: '11px IBM Plex Sans, sans-serif',
-        values: (_u, splits) =>
-          splits.map((v) => {
-            if (!Number.isFinite(v)) return ''
-            const abs = Math.abs(v)
-            if (abs >= 1000) return v.toFixed(0)
-            if (abs >= 10) return v.toFixed(1)
-            if (abs >= 1) return v.toFixed(2)
-            return v.toFixed(3)
-          }),
+        ...(isGear
+          ? {
+              splits: () => [-1, 0, 1, 2, 3, 4, 5, 6],
+              values: (_u: uPlot, splits: number[]) => splits.map((v) => formatGear(v)),
+            }
+          : {
+              values: (_u: uPlot, splits: number[]) =>
+                splits.map((v) => {
+                  if (!Number.isFinite(v)) return ''
+                  const abs = Math.abs(v)
+                  if (abs >= 1000) return v.toFixed(0)
+                  if (abs >= 10) return v.toFixed(1)
+                  if (abs >= 1) return v.toFixed(2)
+                  return v.toFixed(3)
+                }),
+            }),
       })
     })
 

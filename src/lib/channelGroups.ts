@@ -67,6 +67,7 @@ const ROLE_CATEGORY: Record<ChannelRole, ChannelCategory> = {
   distance: 'vehicle',
   power: 'vehicle',
   torque: 'vehicle',
+  gear: 'engine',
 }
 
 export interface ChannelGroup<T extends { name: string } = ParsedChannel> {
@@ -80,7 +81,7 @@ function categoryFromName(name: string, unit: string | null): ChannelCategory | 
   if (/timing|spark|knock|ignition/.test(s)) return 'spark'
   if (/afr|lambda|fuel|injector|trim|stft|ltft|pulse width/.test(s)) return 'fuel'
   if (/boost|wastegate|wgdc|\bmap\b|baro|maf|airflow|air flow/.test(s)) return 'air'
-  if (/rpm|throttle|pedal|\bload\b|camshaft|vvt|oil pressure/.test(s)) return 'engine'
+  if (/rpm|throttle|pedal|\bload\b|camshaft|vvt|oil pressure|\bgear\b/.test(s)) return 'engine'
   if (/temp|iat|ect|coolant|catalyst/.test(s) || /[°º]/.test(s)) return 'temp'
   if (/speed|mph|kph|km\/h|power|torque|\bhp\b|distance|odometer/.test(s)) return 'vehicle'
   return null

@@ -1,10 +1,13 @@
 import {
+  DEFAULT_GEAR_RPM_PER_MPH,
+  DEFAULT_REVERSE_RPM_PER_MPH,
   DEFAULT_SETTINGS,
   GASOLINE_LB_PER_GAL,
   TANK_CAPACITY_GAL,
   fuelWeightLb,
   testWeightLb,
   type AppSettings,
+  type GearRpmPerMph,
 } from '../../lib/settings'
 import { useSettings } from '../../context/SettingsContext'
 
@@ -16,6 +19,8 @@ type UnitKey = Exclude<
   | 'tankFillPercent'
   | 'drivetrainLossPercent'
   | 'estimatePowerFromSpeed'
+  | 'gearRpmPerMph'
+  | 'reverseRpmPerMph'
 >
 
 interface UnitRow {
@@ -266,6 +271,56 @@ export function SettingsPage() {
             Used for crank HP from wheel HP · default {DEFAULT_SETTINGS.drivetrainLossPercent}%
           </span>
         </label>
+      </section>
+
+      <section className="settings-card">
+        <h3>Gearing</h3>
+        <p className="settings-card-note">
+          Gear is derived from engine RPM ÷ vehicle speed (mph). Values are RPM per mph with the
+          clutch engaged. Unmatched ratios plot as N (neutral / clutch in). Reverse is only
+          considered below 25 mph. Starting defaults are a Mazdaspeed 3 6-speed — replace them with
+          yours.
+        </p>
+        <div className="gear-ratio-grid">
+          {settings.gearRpmPerMph.map((value, i) => (
+            <label key={i} className="settings-field gear-ratio-field">
+              <span>
+                {i + 1}
+                {['st', 'nd', 'rd', 'th', 'th', 'th'][i]} (RPM/mph)
+              </span>
+              <input
+                type="number"
+                min={1}
+                max={400}
+                step={0.1}
+                value={value}
+                onChange={(e) => {
+                  const v = Number(e.target.value)
+                  if (!Number.isFinite(v) || v <= 0) return
+                  const next = [...settings.gearRpmPerMph] as GearRpmPerMph
+                  next[i] = v
+                  updateSettings({ gearRpmPerMph: next })
+                }}
+              />
+              <span className="settings-hint">Default {DEFAULT_GEAR_RPM_PER_MPH[i]}</span>
+            </label>
+          ))}
+          <label className="settings-field gear-ratio-field">
+            <span>Reverse (RPM/mph)</span>
+            <input
+              type="number"
+              min={1}
+              max={400}
+              step={0.1}
+              value={settings.reverseRpmPerMph}
+              onChange={(e) => {
+                const v = Number(e.target.value)
+                if (Number.isFinite(v) && v > 0) updateSettings({ reverseRpmPerMph: v })
+              }}
+            />
+            <span className="settings-hint">Default {DEFAULT_REVERSE_RPM_PER_MPH}</span>
+          </label>
+        </div>
       </section>
 
       <div className="settings-actions">

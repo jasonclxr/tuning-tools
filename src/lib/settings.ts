@@ -8,6 +8,8 @@ export type TorqueUnit = 'lbft' | 'Nm'
 export type AirflowUnit = 'g_s' | 'lb_min' | 'kg_h'
 export type MassUnit = 'g' | 'kg' | 'lb'
 export type FuelVolumeUnit = 'cc' | 'mm3' | 'uL'
+/** RPM per mph for 1st–6th. */
+export type GearRpmPerMph = [number, number, number, number, number, number]
 
 export interface AppSettings {
   pressureUnit: PressureUnit
@@ -32,12 +34,20 @@ export interface AppSettings {
   drivetrainLossPercent: number
   /** When true, estimate wheel/crank HP from vehicle speed + weight. */
   estimatePowerFromSpeed: boolean
+  /** RPM per mph for 1st–6th (clutch engaged). */
+  gearRpmPerMph: GearRpmPerMph
+  /** RPM per mph in reverse. */
+  reverseRpmPerMph: number
 }
 
 /** 11 gal tank used for fuel mass. */
 export const TANK_CAPACITY_GAL = 11
 /** Gasoline density used for tank-fill weight (lb / US gal). */
 export const GASOLINE_LB_PER_GAL = 6.3
+
+/** Starting 6-speed RPM/mph (MS3 A26M-R, 4.388 FD, 215/45R18). Editable in Settings. */
+export const DEFAULT_GEAR_RPM_PER_MPH: GearRpmPerMph = [204.4, 129.3, 88.7, 67.4, 57.8, 45.9]
+export const DEFAULT_REVERSE_RPM_PER_MPH = 195.4
 
 export const DEFAULT_SETTINGS: AppSettings = {
   pressureUnit: 'psi',
@@ -56,6 +66,16 @@ export const DEFAULT_SETTINGS: AppSettings = {
   tankFillPercent: 50,
   drivetrainLossPercent: 15,
   estimatePowerFromSpeed: true,
+  gearRpmPerMph: [...DEFAULT_GEAR_RPM_PER_MPH] as GearRpmPerMph,
+  reverseRpmPerMph: DEFAULT_REVERSE_RPM_PER_MPH,
+}
+
+function parseGearRpmPerMph(raw: unknown): GearRpmPerMph {
+  const fallback = [...DEFAULT_GEAR_RPM_PER_MPH] as GearRpmPerMph
+  if (!Array.isArray(raw) || raw.length !== 6) return fallback
+  return raw.map((v, i) =>
+    typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : fallback[i],
+  ) as GearRpmPerMph
 }
 
 function isPositiveNumber(value: unknown): value is number {
@@ -77,7 +97,9 @@ const STORAGE_KEY = 'versa-log-viewer:settings'
 export function loadSettings(): AppSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return { ...DEFAULT_SETTINGS }
+    if (!raw) {
+      return { ...DEFAULT_SETTINGS, gearRpmPerMph: [...DEFAULT_GEAR_RPM_PER_MPH] as GearRpmPerMph }
+    }
     const parsed = JSON.parse(raw) as Partial<AppSettings>
     const hasSplitWeight =
       typeof parsed.driverWeightLb === 'number' || typeof parsed.tankFillPercent === 'number'
@@ -111,9 +133,16 @@ export function loadSettings(): AppSettings {
         typeof parsed.estimatePowerFromSpeed === 'boolean'
           ? parsed.estimatePowerFromSpeed
           : DEFAULT_SETTINGS.estimatePowerFromSpeed,
+      gearRpmPerMph: parseGearRpmPerMph(parsed.gearRpmPerMph),
+      reverseRpmPerMph:
+        typeof parsed.reverseRpmPerMph === 'number' &&
+        Number.isFinite(parsed.reverseRpmPerMph) &&
+        parsed.reverseRpmPerMph > 0
+          ? parsed.reverseRpmPerMph
+          : DEFAULT_SETTINGS.reverseRpmPerMph,
     }
   } catch {
-    return { ...DEFAULT_SETTINGS }
+    return { ...DEFAULT_SETTINGS, gearRpmPerMph: [...DEFAULT_GEAR_RPM_PER_MPH] as GearRpmPerMph }
   }
 }
 

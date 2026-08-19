@@ -212,6 +212,7 @@ export const ROLE_ALIASES: Record<ChannelRole, string[]> = {
     'Injector Pulse Width (ms)',
     'Fuel pulse width (ms)',
   ],
+  gear: ['Gear', 'Current Gear', 'Transmission Gear', 'Gear Position', 'Current gear'],
 }
 
 const HEADER_UNIT_RE = /^(.*?)\s*\(([^)]+)\)\s*$/

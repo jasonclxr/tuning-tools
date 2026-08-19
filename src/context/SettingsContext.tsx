@@ -33,7 +33,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const resetSettings = useCallback(() => {
-    const next = { ...DEFAULT_SETTINGS }
+    const next = {
+      ...DEFAULT_SETTINGS,
+      gearRpmPerMph: [...DEFAULT_SETTINGS.gearRpmPerMph] as typeof DEFAULT_SETTINGS.gearRpmPerMph,
+    }
     saveSettings(next)
     setSettings(next)
   }, [])

@@ -781,6 +781,25 @@ select {
   line-height: 1.45;
 }
 
+.gear-ratio-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem 0.85rem;
+}
+
+.gear-ratio-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
+  font-size: 0.82rem;
+  grid-template-columns: none;
+}
+
+.gear-ratio-field .settings-hint {
+  grid-column: auto;
+}
+
 .settings-check {
   display: flex;
   align-items: center;
@@ -893,6 +912,10 @@ code {
 
   .report-columns {
     grid-template-columns: 1fr;
+  }
+
+  .gear-ratio-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .app-header,
