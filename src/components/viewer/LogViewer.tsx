@@ -70,11 +70,10 @@ export function LogViewer({ log, page, onPageChange }: Props) {
   const cursorIdx = cursorTime != null ? indexNearTime(displayLog.time, cursorTime) : null
 
   const readout = useMemo(() => {
-    if (cursorIdx == null) return []
     const ids = panes.flatMap((p) => p.series.filter((s) => s.visible).map((s) => s.channelId))
     return ids.map((id) => {
       const ch = displayLog.channels.find((c) => c.id === id)
-      const v = ch?.data[cursorIdx]
+      const v = cursorIdx != null ? ch?.data[cursorIdx] : null
       return {
         id,
         label: ch?.name ?? id,
@@ -238,7 +237,9 @@ export function LogViewer({ log, page, onPageChange }: Props) {
                     selecting={selectMode}
                     height={paneHeight}
                     onXRangeChange={setXRange}
-                    onCursorTime={setCursorTime}
+                    onCursorTime={(t) => {
+                      setCursorTime((prev) => (prev === t ? prev : t))
+                    }}
                     onBoxSelect={(range) => {
                       setAnalysisRange(range)
                       setSelectMode(false)

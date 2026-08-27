@@ -111,10 +111,20 @@ export function UPlotPane({
   const plotRef = useRef<uPlot | null>(null)
   const rangeRef = useRef(xRange)
   const selectRef = useRef(selecting)
+  const heightRef = useRef(height)
+  const syncingCursorRef = useRef(false)
   rangeRef.current = xRange
   selectRef.current = selecting
+  heightRef.current = height
 
-  const visibleSeries = pane.series.filter((s) => s.visible)
+  const visibleSeries = useMemo(
+    () => pane.series.filter((s) => s.visible),
+    [pane.series],
+  )
+  const seriesKey = useMemo(
+    () => visibleSeries.map((s) => `${s.channelId}:${s.color}`).join('|'),
+    [visibleSeries],
+  )
 
   const scalePlan = useMemo(() => {
     const order: string[] = []
@@ -234,10 +244,8 @@ export function UPlotPane({
           setScale: false,
         },
         bind: {
-          dblclick: () => {
-            onXRangeChange({ start: log.meta.tMin, end: log.meta.tMax })
-            return null
-          },
+          // Surface touch/pen often synthesizes dblclick; Reset zoom / R still work.
+          dblclick: () => null,
         },
       },
       legend: { show: false },
@@ -299,6 +307,7 @@ export function UPlotPane({
             const onPointerDown = (e: PointerEvent) => {
               if (e.button !== 0) return
               if (selectRef.current) return
+              if (e.pointerType === 'touch' || e.pointerType === 'pen') e.preventDefault()
 
               const min = u.scales.x.min
               const max = u.scales.x.max
@@ -388,18 +397,27 @@ export function UPlotPane({
               }
             }
 
+            const onPointerLeave = (e: PointerEvent) => {
+              if (panning || boxZooming) return
+              if (e.pointerType === 'touch') return
+              onCursorTime(null)
+            }
+
             over.addEventListener('wheel', onWheel, { passive: false })
             over.addEventListener('pointerdown', onPointerDown)
             over.addEventListener('pointermove', onPointerMove)
             over.addEventListener('pointerup', onPointerUp)
             over.addEventListener('pointercancel', onPointerUp)
+            over.addEventListener('pointerleave', onPointerLeave)
           },
         ],
         setCursor: [
           (u) => {
+            if (syncingCursorRef.current) return
             const idx = u.cursor.idx
             if (idx == null || idx < 0) {
-              onCursorTime(null)
+              // setData/redraw clears idx; only hide readout when the pointer left the plot.
+              if (u.cursor.left == null || u.cursor.left < 0) onCursorTime(null)
               return
             }
             const t = u.data[0][idx]
@@ -432,7 +450,7 @@ export function UPlotPane({
       if (!rootRef.current || !plotRef.current) return
       plotRef.current.setSize({
         width: rootRef.current.clientWidth,
-        height,
+        height: heightRef.current,
       })
     })
     ro.observe(rootRef.current)
@@ -443,14 +461,13 @@ export function UPlotPane({
       plotRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    log,
-    pane.id,
-    visibleSeries.map((s) => `${s.channelId}:${s.color}`).join('|'),
-    scalePlan.order.join('|'),
-    height,
-    selecting,
-  ])
+  }, [log, pane.id, seriesKey, scalePlan.order.join('|'), selecting])
+
+  useEffect(() => {
+    const plot = plotRef.current
+    if (!plot || !rootRef.current) return
+    plot.setSize({ width: rootRef.current.clientWidth, height })
+  }, [height])
 
   useEffect(() => {
     const plot = plotRef.current
@@ -480,7 +497,9 @@ export function UPlotPane({
     }
     const left = plot.valToPos(xs[best], 'x')
     if (Number.isFinite(left) && Math.abs((plot.cursor.left ?? -999) - left) > 0.5) {
+      syncingCursorRef.current = true
       plot.setCursor({ left, top: plot.cursor.top ?? 0 })
+      syncingCursorRef.current = false
     }
   }, [cursorTime])
 

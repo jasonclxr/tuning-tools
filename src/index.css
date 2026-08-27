@@ -367,6 +367,7 @@ select {
   background: #0b0f14;
   border: 1px solid var(--border-soft);
   border-radius: 10px;
+  overscroll-behavior: none;
 }
 
 .chart-stack-viewport {
@@ -511,6 +512,8 @@ select {
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
   flex-shrink: 0;
+  min-height: 2.6rem;
+  align-content: center;
 }
 
 .uplot-pane-wrap {
@@ -526,6 +529,11 @@ select {
 .uplot-pane {
   width: 100%;
   flex-shrink: 0;
+  touch-action: none;
+}
+
+.uplot-pane .u-over {
+  touch-action: none;
 }
 
 .scale-legend {
